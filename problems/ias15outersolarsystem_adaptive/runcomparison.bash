@@ -3,7 +3,7 @@ function runepsilon {
 	echo "Running mercury epsilon $1"
 	rm -f ../energy_$1.txt
 	points=20
-	min=-10
+	min=-14
 	max=-5
 	for i in $(seq 0 $points)
 	do 
@@ -145,7 +145,7 @@ make problemgenerator
 rm -rf energy_*.txt
 
 
-for t in $(seq 1 1)
+for t in $(seq 0 7)
 do
 	echo "###################################"
 	echo "Running test case $t"
@@ -158,16 +158,15 @@ do
 	./problemgenerator --testcase=$t
 
 	make -s ias15
-	runepsilonnbody ias15 -10 -2 $runtime
+	runepsilonnbody ias15 -10 -3 $runtime
         runnbodycanonical ias15 0 $runtime
 	runnbodycanonical ias15 1 $runtime
      
 	make -s ra15
-	runepsilonnbody ra15 -10 -8 $runtime
+	runepsilonnbody ra15 -14 -6 $runtime
 
 	make -s wh
 	rundtnbody wh 0 4 $runtime
-	runnbodycanonical wh 1 $runtime
 
 	pushd mercury
 	rm -f *.tmp

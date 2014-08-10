@@ -78,7 +78,7 @@ int main (int argc, char* argv[]){
 	double rel_energy = fabs((energy()-energy_init)/energy_init);
 	double* am;
 	am = angular_momentum();
-	printf("%e\t%e\t%e\t%e\t%e\t%e\t%e\n",rel_energy,am[0],am[1],am[2],aminit[0],aminit[1],aminit[2]);
+	printf("%e\t%.20e\t%.20e\t%.20e\t%.20e\t%.20e\t%.20e\n",rel_energy,am[0],am[1],am[2],aminit[0],aminit[1],aminit[2]);
 }
 
 double energy(){

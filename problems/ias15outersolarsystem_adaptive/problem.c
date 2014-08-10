@@ -159,7 +159,7 @@ void problem_finish(){
 	if (init_N!=N){
 		rel_energy = -1;
 	}
-	fprintf(of,"%e\t%e\t%e\t%e\t%e\t%e\t%e\t",rel_energy,am[0],am[1],am[2],aminit[0],aminit[1],aminit[2]);
+	fprintf(of,"%e\t%.20e\t%.20e\t%.20e\t%.20e\t%.20e\t%.20e\t",rel_energy,am[0],am[1],am[2],aminit[0],aminit[1],aminit[2]);
 	fclose(of);
 }
 
