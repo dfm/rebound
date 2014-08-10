@@ -3,8 +3,8 @@ set output "plot.pdf"
 set terminal pdf color enhanced size 6in,7in
 set logscale xyx2y2
 set autoscale fix
-set yrange [1e-16:0.9]
-set xrange [0.07:12]
+set yrange [1e-16:1]
+set xrange [0.07:15]
 set multiplot 
 unset key
 set ytics 1000
@@ -75,13 +75,25 @@ do for [i=0:7]{
 	}
 
 	plot \
-	"testcase_".i."/energy_ias15.txt" t "IAS15", \
-	"testcase_".i."/energy_ias15_canonical.txt" u (0.0001):(1.) t "IAS15, default" ps 2 lt 6, \
-	"testcase_".i."/energy_ra15.txt" t "RA15 (REBOUND)", \
-	"testcase_".i."/energy_wh.txt" t "      WH (REBOUND)",  \
-	"testcase_".i."/energy_bs2.txt" t "BS2 (MERCURY)",  \
-	"testcase_".i."/energy_radau.txt" t "RADAU (MERCURY)" lt 2,  \
-	"testcase_".i."/energy_mvs.txt" t "      MWS (MERCURY)" lt 7,  \
-	"testcase_".i."/energy_ias15_canonical.txt" notit ps 4 lt 6, \
-	"testcase_".i."/energy_ias15_canonical.txt" notit lt 1
+	"<awk -v type=regular -f regular.awk testcase_".i."/energy_ias15.txt" 		lt 1 t "IAS15", \
+	"<awk -v type=regular -f regular.awk testcase_".i."/energy_ias15_canonical.txt" u (0.0001):(1.) t "IAS15, default" ps 2 lt 6, \
+	"<awk -v type=regular -f regular.awk testcase_".i."/energy_ra15.txt" 		lt 3 t "RA15 (REBOUND)", \
+	"<awk -v type=regular -f regular.awk testcase_".i."/energy_wh.txt" 		lt 4 t "      WH (REBOUND)",  \
+	"<awk -v type=regular -f regular.awk testcase_".i."/energy_bs2.txt" 		lt 5 t "BS2 (MERCURY)",  \
+	"<awk -v type=regular -f regular.awk testcase_".i."/energy_radau.txt" 		lt 2 t "  RADAU (MERCURY)" ,  \
+	"<awk -v type=regular -f regular.awk testcase_".i."/energy_mvs.txt" 		lt 7 t "      MWS (MERCURY)",  \
+	"<awk -v type=regular -f regular.awk testcase_".i."/energy_ias15_canonical.txt" notit ps 4 lt 6, \
+	"<awk -v type=regular -f regular.awk testcase_".i."/energy_ias15_canonical.txt" notit lt 1, \
+	"<awk -v type=limit   -f regular.awk testcase_".i."/energy_ias15.txt" 		u 1:2:(0):(0.5) notit with vectors head  lt 1, \
+	"<awk -v type=limit   -f regular.awk testcase_".i."/energy_ra15.txt" 		u 1:2:(0):(0.5) notit with vectors head  lt 3, \
+	"<awk -v type=limit   -f regular.awk testcase_".i."/energy_wh.txt" 		u 1:2:(0):(0.5) notit with vectors head  lt 4,  \
+	"<awk -v type=limit   -f regular.awk testcase_".i."/energy_bs2.txt" 		u 1:2:(0):(0.5) notit with vectors head  lt 5,  \
+	"<awk -v type=limit   -f regular.awk testcase_".i."/energy_radau.txt" 		u 1:2:(0):(0.5) notit with vectors head  lt 2,  \
+	"<awk -v type=limit   -f regular.awk testcase_".i."/energy_mvs.txt" 		u 1:2:(0):(0.5) notit with vectors head  lt 7,  \
+	"<awk -v type=limit   -f regular.awk testcase_".i."/energy_ias15.txt" 		notit lt 1 ps 0.5 , \
+	"<awk -v type=limit   -f regular.awk testcase_".i."/energy_ra15.txt" 		notit lt 3 ps 0.5 , \
+	"<awk -v type=limit   -f regular.awk testcase_".i."/energy_wh.txt" 		notit lt 4 ps 0.5 ,  \
+	"<awk -v type=limit   -f regular.awk testcase_".i."/energy_bs2.txt" 		notit lt 5 ps 0.5 ,  \
+	"<awk -v type=limit   -f regular.awk testcase_".i."/energy_radau.txt" 		notit lt 2 ps 0.5 ,  \
+	"<awk -v type=limit   -f regular.awk testcase_".i."/energy_mvs.txt" 		notit lt 7 ps 0.5 ,  \
 }
