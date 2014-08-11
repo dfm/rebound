@@ -74,9 +74,7 @@ double r[28],c[21],d[21],s[9]; // These constants will be set dynamically.
 int N3allocated 		= 0; 	// Size of allocated arrays.
 int integrator_ias15_init_done 	= 0;	// Calculate coefficients once.
 
-double* xt   = NULL;	// Temporary buffer for position
-double* vt   = NULL;	//                      velocity
-double* at   = NULL;	//                      acceleration
+double* at   = NULL;	// Temporary buffer for acceleration
 double* x0  = NULL;	// Temporary buffer for position (used for initial values at h=0) 
 double* v0  = NULL;	//                      velocity
 double* a0  = NULL;	//                      acceleration
@@ -89,7 +87,6 @@ double* e[7] = {NULL, NULL, NULL, NULL, NULL, NULL, NULL} ;
 double* br[7] = {NULL, NULL, NULL, NULL, NULL, NULL, NULL} ;	// Used for resetting after timestep rejection
 double* er[7] = {NULL, NULL, NULL, NULL, NULL, NULL, NULL} ;
 
-struct particle* particles_out = NULL; // Temporary particle buffer.
 void copybuffers(double* _a[7], double* _b[7], int N3);
 void predict_next_step(double ratio, int N3, double* _e[7], double* _b[7]);
 double dt_last_success;
@@ -159,8 +156,6 @@ int integrator_ias15_step() {
 				er[l][k] = 0;
 			}
 		}
-		xt = realloc(xt,sizeof(double)*N3);
-		vt = realloc(vt,sizeof(double)*N3);
 		at = realloc(at,sizeof(double)*N3);
 		x0 = realloc(x0,sizeof(double)*N3);
 		v0 = realloc(v0,sizeof(double)*N3);
@@ -172,11 +167,9 @@ int integrator_ias15_step() {
 			csx[i] = 0;
 			csv[i] = 0;
 		}
-		particles_out = realloc(particles_out,sizeof(struct particle)*N);
 		N3allocated = N3;
 	}
 	
-	struct particle* particles_in  = particles;
 	// integrator_update_acceleration(); // Not needed. Forces are already calculated in main routine.
 
 	for(int k=0;k<N;k++) {
@@ -203,8 +196,11 @@ int integrator_ias15_step() {
 
 	double predictor_corrector_error = 1;
 	double predictor_corrector_error_last = 2;
-	int iterations = 0;
-	while(predictor_corrector_error>1e-16 && (iterations <= 2 || predictor_corrector_error_last > predictor_corrector_error)){						// Predictor corrector loop
+	int iterations = 0;	
+	// Predictor corrector loop
+	// Stops if accuracy better than 1e-16 or if accuracy starts to oscillate
+	while(predictor_corrector_error>1e-16 && (iterations <= 2 || predictor_corrector_error_last > predictor_corrector_error)){	
+						
 		predictor_corrector_error_last = predictor_corrector_error;
 		if (iterations>=integrator_iterations_max){
 			integrator_iterations_max_exceeded++;
@@ -229,8 +225,18 @@ int integrator_ias15_step() {
 			s[7] = 3. * s[6] * h[n] / 4.;
 			s[8] = 7. * s[7] * h[n] / 9.;
 
-			for(int k=0;k<N3;k++) {						// Predict positions at interval n using b values
-				xt[k]  = csx[k] + (s[8]*b[6][k] + s[7]*b[5][k] + s[6]*b[4][k] + s[5]*b[3][k] + s[4]*b[2][k] + s[3]*b[1][k] + s[2]*b[0][k] + s[1]*a0[k] + s[0]*v0[k] );
+			// Prepare particles arrays for force calculation
+			for(int i=0;i<N;i++) {						// Predict positions at interval n using b values
+				const int k0 = 3*i+0;
+				const int k1 = 3*i+1;
+				const int k2 = 3*i+2;
+
+				double xk0  = csx[k0] + (s[8]*b[6][k0] + s[7]*b[5][k0] + s[6]*b[4][k0] + s[5]*b[3][k0] + s[4]*b[2][k0] + s[3]*b[1][k0] + s[2]*b[0][k0] + s[1]*a0[k0] + s[0]*v0[k0] );
+				particles[i].x = xk0 + x0[k0];
+				double xk1  = csx[k1] + (s[8]*b[6][k1] + s[7]*b[5][k1] + s[6]*b[4][k1] + s[5]*b[3][k1] + s[4]*b[2][k1] + s[3]*b[1][k1] + s[2]*b[0][k1] + s[1]*a0[k1] + s[0]*v0[k1] );
+				particles[i].y = xk1 + x0[k1];
+				double xk2  = csx[k2] + (s[8]*b[6][k2] + s[7]*b[5][k2] + s[6]*b[4][k2] + s[5]*b[3][k2] + s[4]*b[2][k2] + s[3]*b[1][k2] + s[2]*b[0][k2] + s[1]*a0[k2] + s[0]*v0[k2] );
+				particles[i].z = xk2 + x0[k2];
 			}
 			
 			if (integrator_force_is_velocitydependent){
@@ -243,25 +249,21 @@ int integrator_ias15_step() {
 				s[6] = 6. * s[5] * h[n] / 7.;
 				s[7] = 7. * s[6] * h[n] / 8.;
 
-				for(int k=0;k<N3;k++) {					// Predict velocities at interval n using b values
-					vt[k] =  csv[k] + s[7]*b[6][k] + s[6]*b[5][k] + s[5]*b[4][k] + s[4]*b[3][k] + s[3]*b[2][k] + s[2]*b[1][k] + s[1]*b[0][k] + s[0]*a0[k];
+				for(int i=0;i<N;i++) {					// Predict velocities at interval n using b values
+					const int k0 = 3*i+0;
+					const int k1 = 3*i+1;
+					const int k2 = 3*i+2;
+
+					double vk0 =  csv[k0] + s[7]*b[6][k0] + s[6]*b[5][k0] + s[5]*b[4][k0] + s[4]*b[3][k0] + s[3]*b[2][k0] + s[2]*b[1][k0] + s[1]*b[0][k0] + s[0]*a0[k0];
+					particles[k].vx = vtk0 + v0[k0];
+					double vk1 =  csv[k1] + s[7]*b[6][k1] + s[6]*b[5][k1] + s[5]*b[4][k1] + s[4]*b[3][k1] + s[3]*b[2][k1] + s[2]*b[1][k1] + s[1]*b[0][k1] + s[0]*a0[k1];
+					particles[k].vy = vtk1 + v0[k1];
+					double vk2 =  csv[k2] + s[7]*b[6][k2] + s[6]*b[5][k2] + s[5]*b[4][k2] + s[4]*b[3][k2] + s[3]*b[2][k2] + s[2]*b[1][k2] + s[1]*b[0][k2] + s[0]*a0[k2];
+					particles[k].vz = vtk2 + v0[k2];
 				}
 			}
 
-			// Prepare particles arrays for force calculation
-			for(int k=0;k<N;k++) {
-				particles_out[k] = particles_in[k];
 
-				particles_out[k].x = xt[3*k+0] + x0[3*k+0];
-				particles_out[k].y = xt[3*k+1] + x0[3*k+1];
-				particles_out[k].z = xt[3*k+2] + x0[3*k+2];
-
-				particles_out[k].vx = vt[3*k+0] + v0[3*k+0];
-				particles_out[k].vy = vt[3*k+1] + v0[3*k+1];
-				particles_out[k].vz = vt[3*k+2] + v0[3*k+2];
-			}
-
-			particles = particles_out;
 			integrator_update_acceleration();				// Calculate forces at interval n
 
 			for(int k=0;k<N;++k) {
@@ -425,7 +427,16 @@ int integrator_ias15_step() {
 		if (dt_new<integrator_min_dt) dt_new = integrator_min_dt;
 		
 		if (fabs(dt_new/dt_done) < safety_factor) {	// New timestep is significantly smaller.
-			particles = particles_in;
+			// Reset particles
+			for(int k=0;k<N;++k) {
+				particles[k].x = x0[3*k+0];	// Set inital position
+				particles[k].y = x0[3*k+1];
+				particles[k].z = x0[3*k+2];
+
+				particles[k].vx = v0[3*k+0];	// Set inital velocity
+				particles[k].vy = v0[3*k+1];
+				particles[k].vz = v0[3*k+2];
+			}
 			dt = dt_new;
 			double ratio = dt/dt_last_success;
 			predict_next_step(ratio, N3, er, br);
@@ -460,7 +471,6 @@ int integrator_ias15_step() {
 
 	t += dt_done;
 	// Swap particle buffers
-	particles = particles_in;
 
 	for(int k=0;k<N;++k) {
 		particles[k].x = x0[3*k+0];	// Set final position
