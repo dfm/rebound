@@ -446,7 +446,6 @@ int integrator_ias15_step() {
 		if (fabs(dt_new/dt_done) > 1.0) {	// New timestep is larger.
 			if (dt_new/dt_done > 1./safety_factor) dt_new = dt_done /safety_factor;	// Don't increase the timestep by too much compared to the last one.
 		}
-		//printf("step APPROVED %.20e %e %e %f %e %d %e\n",t, dt_done, dt_new, dt_new/dt_done, integrator_error, iterations, predictor_corrector_error);
 		dt = dt_new;
 	}
 
