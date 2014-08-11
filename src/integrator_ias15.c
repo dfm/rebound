@@ -114,7 +114,7 @@ void integrator_part2(){
 		int l=0;
 		for (int j=1;j<8;++j) {
 			for(int k=0;k<j;++k) {
-				r[l] = 1.0 / (h[j] - h[k]);
+				r[l] = h[j] - h[k];
 				++l;
 			}
 		}
@@ -275,14 +275,14 @@ int integrator_ias15_step() {
 				case 1: 
 					for(int k=0;k<N3;++k) {
 						double tmp = g[0][k];
-						g[0][k]  = (at[k] - a0[k]) * r[0];
+						g[0][k]  = (at[k] - a0[k]) / r[0];
 						b[0][k] += g[0][k] - tmp;
 					} break;
 				case 2: 
 					for(int k=0;k<N3;++k) {
 						double tmp = g[1][k];
 						double gk = at[k] - a0[k];
-						g[1][k] = (gk*r[1] - g[0][k])*r[2];
+						g[1][k] = (gk/r[1] - g[0][k])/r[2];
 						tmp = g[1][k] - tmp;
 						b[0][k] += tmp * c[0];
 						b[1][k] += tmp;
@@ -291,7 +291,7 @@ int integrator_ias15_step() {
 					for(int k=0;k<N3;++k) {
 						double tmp = g[2][k];
 						double gk = at[k] - a0[k];
-						g[2][k] = ((gk*r[3] - g[0][k])*r[4] - g[1][k])*r[5];
+						g[2][k] = ((gk/r[3] - g[0][k])/r[4] - g[1][k])/r[5];
 						tmp = g[2][k] - tmp;
 						b[0][k] += tmp * c[1];
 						b[1][k] += tmp * c[2];
@@ -301,7 +301,7 @@ int integrator_ias15_step() {
 					for(int k=0;k<N3;++k) {
 						double tmp = g[3][k];
 						double gk = at[k] - a0[k];
-						g[3][k] = (((gk*r[6] - g[0][k])*r[7] - g[1][k])*r[8] - g[2][k])*r[9];
+						g[3][k] = (((gk/r[6] - g[0][k])/r[7] - g[1][k])/r[8] - g[2][k])/r[9];
 						tmp = g[3][k] - tmp;
 						b[0][k] += tmp * c[3];
 						b[1][k] += tmp * c[4];
@@ -312,7 +312,7 @@ int integrator_ias15_step() {
 					for(int k=0;k<N3;++k) {
 						double tmp = g[4][k];
 						double gk = at[k] - a0[k];
-						g[4][k] = ((((gk*r[10] - g[0][k])*r[11] - g[1][k])*r[12] - g[2][k])*r[13] - g[3][k])*r[14];
+						g[4][k] = ((((gk/r[10] - g[0][k])/r[11] - g[1][k])/r[12] - g[2][k])/r[13] - g[3][k])/r[14];
 						tmp = g[4][k] - tmp;
 						b[0][k] += tmp * c[6];
 						b[1][k] += tmp * c[7];
@@ -324,7 +324,7 @@ int integrator_ias15_step() {
 					for(int k=0;k<N3;++k) {
 						double tmp = g[5][k];
 						double gk = at[k] - a0[k];
-						g[5][k] = (((((gk*r[15] - g[0][k])*r[16] - g[1][k])*r[17] - g[2][k])*r[18] - g[3][k])*r[19] - g[4][k])*r[20];
+						g[5][k] = (((((gk/r[15] - g[0][k])/r[16] - g[1][k])/r[17] - g[2][k])/r[18] - g[3][k])/r[19] - g[4][k])/r[20];
 						tmp = g[5][k] - tmp;
 						b[0][k] += tmp * c[10];
 						b[1][k] += tmp * c[11];
@@ -340,7 +340,7 @@ int integrator_ias15_step() {
 					for(int k=0;k<N3;++k) {
 						double tmp = g[6][k];
 						double gk = at[k] - a0[k];
-						g[6][k] = ((((((gk*r[21] - g[0][k])*r[22] - g[1][k])*r[23] - g[2][k])*r[24] - g[3][k])*r[25] - g[4][k])*r[26] - g[5][k])*r[27];
+						g[6][k] = ((((((gk/r[21] - g[0][k])/r[22] - g[1][k])/r[23] - g[2][k])/r[24] - g[3][k])/r[25] - g[4][k])/r[26] - g[5][k])/r[27];
 						tmp = g[6][k] - tmp;	
 						b[0][k] += tmp * c[15];
 						b[1][k] += tmp * c[16];
