@@ -160,7 +160,7 @@ do
 	make -s ias15
 	runepsilonnbody ias15 -10 -3 $runtime
         runnbodycanonical ias15 0 $runtime
-	runnbodycanonical ias15 1 $runtime
+	#runnbodycanonical ias15 1 $runtime
      
 	make -s ra15
 	runepsilonnbody ra15 -14 -6 $runtime
