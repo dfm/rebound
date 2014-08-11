@@ -145,7 +145,7 @@ make problemgenerator
 rm -rf energy_*.txt
 
 
-for t in $(seq 0 7)
+for t in $(seq 2 2)
 do
 	echo "###################################"
 	echo "Running test case $t"
