@@ -80,6 +80,8 @@ double* at   = NULL;	//                      acceleration
 double* x0  = NULL;	// Temporary buffer for position (used for initial values at h=0) 
 double* v0  = NULL;	//                      velocity
 double* a0  = NULL;	//                      acceleration
+double* csx  = NULL;	//                      compensated summation
+double* csv  = NULL;	//                      compensated summation
 
 double* g[7] = {NULL, NULL, NULL, NULL, NULL, NULL, NULL} ;
 double* b[7] = {NULL, NULL, NULL, NULL, NULL, NULL, NULL} ;
@@ -163,6 +165,12 @@ int integrator_ias15_step() {
 		x0 = realloc(x0,sizeof(double)*N3);
 		v0 = realloc(v0,sizeof(double)*N3);
 		a0 = realloc(a0,sizeof(double)*N3);
+		csx= realloc(csx,sizeof(double)*N3);
+		csv= realloc(csv,sizeof(double)*N3);
+		for (int i=N3allocated;i<N3;i++){
+			csx[i] = 0;
+			csv[i] = 0;
+		}
 		particles_out = realloc(particles_out,sizeof(struct particle)*N);
 		N3allocated = N3;
 	}
@@ -193,8 +201,10 @@ int integrator_ias15_step() {
 	}
 
 	double predictor_corrector_error = 1;
+	double predictor_corrector_error_last = 2;
 	int iterations = 0;
-	while(predictor_corrector_error>1e-12){						// Predictor corrector loop
+	while(predictor_corrector_error>1e-12 && predictor_corrector_error_last > predictor_corrector_error){						// Predictor corrector loop
+		predictor_corrector_error_last = predictor_corrector_error;
 		if (iterations>=integrator_iterations_max){
 			integrator_iterations_max_exceeded++;
 			const int integrator_iterations_warning = 10;
@@ -219,7 +229,11 @@ int integrator_ias15_step() {
 			s[8] = 7. * s[7] * h[n] / 9.;
 
 			for(int k=0;k<N3;k++) {						// Predict positions at interval n using b values
-				xt[k] = 	s[8]*b[6][k] + s[7]*b[5][k] + s[6]*b[4][k] + s[5]*b[3][k] + s[4]*b[2][k] + s[3]*b[1][k] + s[2]*b[0][k] + s[1]*a0[k] + s[0]*v0[k] + x0[k];
+				double a = x0[k];
+
+				double _csx = csx[k] + (s[8]*b[6][k] + s[7]*b[5][k] + s[6]*b[4][k] + s[5]*b[3][k] + s[4]*b[2][k] + s[3]*b[1][k] + s[2]*b[0][k] + s[1]*a0[k] + s[0]*v0[k] );
+			
+				xt[k]    = a + _csx;
 			}
 			
 			if (integrator_force_is_velocitydependent){
@@ -431,10 +445,20 @@ int integrator_ias15_step() {
 	// Find new position and velocity values at end of the sequence
 	const double dt_done2 = dt_done * dt_done;
 	for(int k=0;k<N3;++k) {
-		x0[k] += (b[6][k]/72. + b[5][k]/56. + b[4][k]/42. + b[3][k]/30. + b[2][k]/20. + b[1][k]/12. + b[0][k]/6. + a0[k]/2.) 
-			* dt_done2 + v0[k] * dt_done;
-		v0[k] += (b[6][k]/8. + b[5][k]/7. + b[4][k]/6. + b[3][k]/5. + b[2][k]/4. + b[1][k]/3. + b[0][k]/2. + a0[k])
-			* dt_done;
+		{
+			double a = x0[k];
+			csx[k]  +=  (b[6][k]/72. + b[5][k]/56. + b[4][k]/42. + b[3][k]/30. + b[2][k]/20. + b[1][k]/12. + b[0][k]/6. + a0[k]/2.) 
+					* dt_done2 + v0[k] * dt_done;
+			x0[k]    = a + csx[k];
+			csx[k]  += a- x0[k]; 
+		}
+		{
+			double a = v0[k]; 
+			csv[k]  += (b[6][k]/8. + b[5][k]/7. + b[4][k]/6. + b[3][k]/5. + b[2][k]/4. + b[1][k]/3. + b[0][k]/2. + a0[k])
+					* dt_done;
+			v0[k]    = a + csv[k];
+			csv[k]  += a - v0[k];
+		}
 	}
 
 	t += dt_done;
