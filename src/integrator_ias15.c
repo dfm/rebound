@@ -203,7 +203,7 @@ int integrator_ias15_step() {
 	double predictor_corrector_error = 1;
 	double predictor_corrector_error_last = 2;
 	int iterations = 0;
-	while(predictor_corrector_error>1e-12 && predictor_corrector_error_last > predictor_corrector_error){						// Predictor corrector loop
+	while(predictor_corrector_error>1e-12 && (iterations <= 2 || predictor_corrector_error_last > predictor_corrector_error)){						// Predictor corrector loop
 		predictor_corrector_error_last = predictor_corrector_error;
 		if (iterations>=integrator_iterations_max){
 			integrator_iterations_max_exceeded++;
@@ -229,11 +229,7 @@ int integrator_ias15_step() {
 			s[8] = 7. * s[7] * h[n] / 9.;
 
 			for(int k=0;k<N3;k++) {						// Predict positions at interval n using b values
-				double a = x0[k];
-
-				double _csx = csx[k] + (s[8]*b[6][k] + s[7]*b[5][k] + s[6]*b[4][k] + s[5]*b[3][k] + s[4]*b[2][k] + s[3]*b[1][k] + s[2]*b[0][k] + s[1]*a0[k] + s[0]*v0[k] );
-			
-				xt[k]    = a + _csx;
+				xt[k]  = csx[k] + (s[8]*b[6][k] + s[7]*b[5][k] + s[6]*b[4][k] + s[5]*b[3][k] + s[4]*b[2][k] + s[3]*b[1][k] + s[2]*b[0][k] + s[1]*a0[k] + s[0]*v0[k] );
 			}
 			
 			if (integrator_force_is_velocitydependent){
@@ -247,7 +243,7 @@ int integrator_ias15_step() {
 				s[7] = 7. * s[6] * h[n] / 8.;
 
 				for(int k=0;k<N3;k++) {					// Predict velocities at interval n using b values
-					vt[k] =  s[7]*b[6][k] + s[6]*b[5][k] + s[5]*b[4][k] + s[4]*b[3][k] + s[3]*b[2][k] + s[2]*b[1][k] + s[1]*b[0][k] + s[0]*a0[k] + v0[k];
+					vt[k] =  csv[k] + s[7]*b[6][k] + s[6]*b[5][k] + s[5]*b[4][k] + s[4]*b[3][k] + s[3]*b[2][k] + s[2]*b[1][k] + s[1]*b[0][k] + s[0]*a0[k];
 				}
 			}
 
@@ -255,13 +251,13 @@ int integrator_ias15_step() {
 			for(int k=0;k<N;k++) {
 				particles_out[k] = particles_in[k];
 
-				particles_out[k].x = xt[3*k+0];
-				particles_out[k].y = xt[3*k+1];
-				particles_out[k].z = xt[3*k+2];
+				particles_out[k].x = xt[3*k+0] + x0[3*k+0];
+				particles_out[k].y = xt[3*k+1] + x0[3*k+1];
+				particles_out[k].z = xt[3*k+2] + x0[3*k+2];
 
-				particles_out[k].vx = vt[3*k+0];
-				particles_out[k].vy = vt[3*k+1];
-				particles_out[k].vz = vt[3*k+2];
+				particles_out[k].vx = vt[3*k+0] + v0[3*k+0];
+				particles_out[k].vy = vt[3*k+1] + v0[3*k+1];
+				particles_out[k].vz = vt[3*k+2] + v0[3*k+2];
 			}
 
 			particles = particles_out;
@@ -450,7 +446,7 @@ int integrator_ias15_step() {
 			csx[k]  +=  (b[6][k]/72. + b[5][k]/56. + b[4][k]/42. + b[3][k]/30. + b[2][k]/20. + b[1][k]/12. + b[0][k]/6. + a0[k]/2.) 
 					* dt_done2 + v0[k] * dt_done;
 			x0[k]    = a + csx[k];
-			csx[k]  += a- x0[k]; 
+			csx[k]  += a - x0[k]; 
 		}
 		{
 			double a = v0[k]; 
