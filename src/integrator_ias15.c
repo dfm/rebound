@@ -255,11 +255,11 @@ int integrator_ias15_step() {
 					const int k2 = 3*i+2;
 
 					double vk0 =  csv[k0] + s[7]*b[6][k0] + s[6]*b[5][k0] + s[5]*b[4][k0] + s[4]*b[3][k0] + s[3]*b[2][k0] + s[2]*b[1][k0] + s[1]*b[0][k0] + s[0]*a0[k0];
-					particles[k].vx = vtk0 + v0[k0];
+					particles[i].vx = vk0 + v0[k0];
 					double vk1 =  csv[k1] + s[7]*b[6][k1] + s[6]*b[5][k1] + s[5]*b[4][k1] + s[4]*b[3][k1] + s[3]*b[2][k1] + s[2]*b[1][k1] + s[1]*b[0][k1] + s[0]*a0[k1];
-					particles[k].vy = vtk1 + v0[k1];
+					particles[i].vy = vk1 + v0[k1];
 					double vk2 =  csv[k2] + s[7]*b[6][k2] + s[6]*b[5][k2] + s[5]*b[4][k2] + s[4]*b[3][k2] + s[3]*b[2][k2] + s[2]*b[1][k2] + s[1]*b[0][k2] + s[0]*a0[k2];
-					particles[k].vz = vtk2 + v0[k2];
+					particles[i].vz = vk2 + v0[k2];
 				}
 			}
 
