@@ -64,7 +64,8 @@ double 	integrator_min_dt 			= 0;	// Minimum timestep used as a floor when adapt
 double	integrator_error			= 0;	// Error estimate in last timestep (used for debugging only)
 unsigned int integrator_iterations_max		= 12;	// Maximum number of iterations in predictor/corrector loop
 unsigned long integrator_iterations_max_exceeded= 0;	// Count how many times the iteration did not converge
-const double safety_factor 			= 0.25;  // Maximum increase/deacrease of consecutve timesteps.
+const double safety_factor 			= 0.25;	// Maximum increase/deacrease of consecutve timesteps.
+long	integrator_steps			= 0;	// Steps taken by the integrator since the last killing of compensated summation coefficients
 
 
 const double h[8]	= { 0.0, 0.05626256053692215, 0.18024069173689236, 0.35262471711316964, 0.54715362633055538, 0.73421017721541053, 0.88532094683909577, 0.97752061356128750}; // Gauss Radau spacings
@@ -167,13 +168,23 @@ int integrator_ias15_step() {
 		a0 = realloc(a0,sizeof(double)*N3);
 		csx= realloc(csx,sizeof(double)*N3);
 		csv= realloc(csv,sizeof(double)*N3);
-		for (int i=N3allocated;i<N3;i++){
+		for (int i=0;i<N3;i++){
+			// Kill compensated summation coefficients
 			csx[i] = 0;
 			csv[i] = 0;
 		}
 		particles_out = realloc(particles_out,sizeof(struct particle)*N);
 		N3allocated = N3;
 	}
+	if (integrator_steps >1000000){
+		integrator_steps = 0;
+		for (int i=0;i<N3;i++){
+			// Kill compensated summation coefficients
+			csx[i] = 0;
+			csv[i] = 0;
+		}
+	}
+	integrator_steps++;
 	
 	struct particle* particles_in  = particles;
 	// integrator_update_acceleration(); // Not needed. Forces are already calculated in main routine.
@@ -203,7 +214,7 @@ int integrator_ias15_step() {
 	double predictor_corrector_error = 1;
 	double predictor_corrector_error_last = 2;
 	int iterations = 0;
-	while(predictor_corrector_error>1e-12 && (iterations <= 2 || predictor_corrector_error_last > predictor_corrector_error)){						// Predictor corrector loop
+	while(predictor_corrector_error>1e-14 && (iterations <= 2 || predictor_corrector_error_last > predictor_corrector_error)){						// Predictor corrector loop
 		predictor_corrector_error_last = predictor_corrector_error;
 		if (iterations>=integrator_iterations_max){
 			integrator_iterations_max_exceeded++;
