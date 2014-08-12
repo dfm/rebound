@@ -40,6 +40,12 @@
 #include <math.h>
 #include <time.h>
 #include <string.h>
+// Uncomment the following line to generate numerical constants with extended precision.
+//#define GENERATE_CONSTANTS
+#ifdef GENERATE_CONSTANTS
+#include <gmp.h>
+void integrator_generate_constants();
+#endif // GENERATE_CONSTANTS
 #include "particle.h"
 #include "main.h"
 #include "gravity.h"
@@ -68,12 +74,17 @@ const double safety_factor 			= 0.25;	// Maximum increase/deacrease of consecutv
 
 
 // Gauss Radau spacings
-const double h[8]	= { 0.0, 0.05626256053692214646565, 0.18024069173689236498758, 0.35262471711316963737391, 0.54715362633055538300145, 0.73421017721541054105315, 0.88532094683909576809036, 0.97752061356128750189117}; 
+const double h[8]	= { 0.0, 0.0562625605369221464656521910, 0.1802406917368923649875799428, 0.3526247171131696373739077702, 0.5471536263305553830014485577, 0.7342101772154105410531523211, 0.8853209468390957680903597629, 0.9775206135612875018911745004}; 
 
-double r[28],c[21],d[21],s[9]; // These constants will be set dynamically.
+//double r[28],c[21],d[21],s[9]; // These constants will be set dynamically.
+double s[9]; // These constants will be set dynamically.
+
+double r[28] = {0.0562625605369221464656522, 0.1802406917368923649875799, 0.1239781311999702185219278, 0.3526247171131696373739078, 0.2963621565762474909082556, 0.1723840253762772723863278, 0.5471536263305553830014486, 0.4908910657936332365357964, 0.3669129345936630180138686, 0.1945289092173857456275408, 0.7342101772154105410531523, 0.6779476166784883945875001, 0.5539694854785181760655724, 0.3815854601022409036792446, 0.1870565508848551580517038, 0.8853209468390957680903598, 0.8290583863021736216247076, 0.7050802551022034031027798, 0.5326962297259261307164520, 0.3381673205085403850889112, 0.1511107696236852270372074, 0.9775206135612875018911745, 0.9212580530243653554255223, 0.7972799218243951369035946, 0.6248958964481178645172667, 0.4303669872307321188897259, 0.2433104363458769608380222, 0.0921996667221917338008147};
+double c[21] = {-0.0562625605369221464656522, 0.0101408028300636299864818, -0.2365032522738145114532321, -0.0035758977292516175949345, 0.0935376952594620658957485, -0.5891279693869841488271399, 0.0019565654099472210769006, -0.0547553868890686864408084, 0.4158812000823068616886219, -1.1362815957175395318285885, -0.0014365302363708915610919, 0.0421585277212687082291130, -0.3600995965020568162530901, 1.2501507118406910366792415, -1.8704917729329500728817408, 0.0012717903090268677658020, -0.0387603579159067708505249, 0.3609622434528459872559689, -1.4668842084004269779203515, 2.9061362593084293206895457, -2.7558127197720458409721005};
+double d[21] = {0.0562625605369221464656522, 0.0031654757181708292499905, 0.2365032522738145114532321, 0.0001780977692217433881125, 0.0457929855060279188954539, 0.5891279693869841488271399, 0.0000100202365223291272096, 0.0084318571535257015445000, 0.2535340690545692665214616, 1.1362815957175395318285885, 0.0000005637641639318207610, 0.0015297840025004658189490, 0.0978342365324440053653648, 0.8752546646840910912297246, 1.8704917729329500728817408, 0.0000000317188154017613665, 0.0002762930909826476593130, 0.0360285539837364596003871, 0.5767330002770787313544596, 2.2485887607691598182153473, 2.7558127197720458409721005};
+
 
 int N3allocated 		= 0; 	// Size of allocated arrays.
-int integrator_ias15_init_done 	= 0;	// Calculate coefficients once.
 
 double* at   = NULL;	// Temporary buffer for acceleration
 double* x0  = NULL;	// Temporary buffer for position (used for initial values at h=0) 
@@ -111,32 +122,9 @@ void integrator_update_acceleration(){
 int integrator_ias15_step(); // Does the actual timestep.
 
 void integrator_part2(){
-	if (!integrator_ias15_init_done){ 	// Generate coefficients.
-		int l=0;
-		for (int j=1;j<8;++j) {
-			for(int k=0;k<j;++k) {
-				r[l] = h[j] - h[k];
-				++l;
-			}
-		}
-		c[0] = -h[1];
-		d[0] =  h[1];
-		l=0;
-		for (int j=2;j<7;++j) {
-			++l;
-			c[l] = -h[j] * c[l-j+1];
-			d[l] =  h[1] * d[l-j+1];
-			for(int k=2;k<j;++k) {
-				++l;
-				c[l] = c[l-j] - h[j] * c[l-j+1];
-				d[l] = d[l-j] + h[k] * d[l-j+1];
-			}
-			++l;
-			c[l] = c[l-j] - h[j];
-			d[l] = d[l-j] + h[j]; 
-		}
-		integrator_ias15_init_done = 1;
-	}
+#ifdef GENERATE_CONSTANTS
+	integrator_generate_constants();
+#endif  // GENERATE_CONSTANTS
 	// Try until a step was successful.
 	while(!integrator_ias15_step());
 }
@@ -542,3 +530,89 @@ void copybuffers(double* _a[7], double* _b[7], int N3){
 		_b[6][i] = _a[6][i];
 	}
 }
+
+#ifdef GENERATE_CONSTANTS
+void integrator_generate_constants(){
+	printf("Generaring constants.\n\n");
+	mpf_set_default_prec(512);
+	mpf_t* _h = malloc(sizeof(mpf_t)*8);
+	for (int i=0;i<8;i++){
+		mpf_init(_h[i]);
+	}
+	mpf_t* _r = malloc(sizeof(mpf_t)*28);
+	for (int i=0;i<28;i++){
+		mpf_init(_r[i]);
+	}
+	mpf_t* _c = malloc(sizeof(mpf_t)*21);
+	mpf_t* _d = malloc(sizeof(mpf_t)*21);
+	for (int i=0;i<21;i++){
+		mpf_init(_c[i]);
+		mpf_init(_d[i]);
+	}
+	mpf_set_str(_h[0],"0.0",10);
+	mpf_set_str(_h[1],"0.0562625605369221464656521910",10);
+	mpf_set_str(_h[2],"0.1802406917368923649875799428",10);
+	mpf_set_str(_h[3],"0.3526247171131696373739077702",10);
+	mpf_set_str(_h[4],"0.5471536263305553830014485577",10);
+	mpf_set_str(_h[5],"0.7342101772154105410531523211",10);
+	mpf_set_str(_h[6],"0.8853209468390957680903597629",10);
+	mpf_set_str(_h[7],"0.9775206135612875018911745004",10);
+
+	int l=0;
+	for (int j=1;j<8;++j) {
+		for(int k=0;k<j;++k) {
+			// r[l] = h[j] - h[k];
+			mpf_sub(_r[l],_h[j],_h[k]);
+			++l;
+		}
+	}
+	//c[0] = -h[1];
+	mpf_neg(_c[0],_h[1]);
+	//d[0] =  h[1];
+	mpf_set(_d[0],_h[1]);
+	l=0;
+	for (int j=2;j<7;++j) {
+		++l;
+		// c[l] = -h[j] * c[l-j+1];
+		mpf_mul(_c[l], _h[j], _c[l-j+1]);
+		mpf_neg(_c[l], _c[l]);
+		//d[l] =  h[1] * d[l-j+1];
+		mpf_mul(_d[l], _h[1], _d[l-j+1]);
+		for(int k=2;k<j;++k) {
+			++l;
+			//c[l] = c[l-j] - h[j] * c[l-j+1];
+			mpf_mul(_c[l], _h[j], _c[l-j+1]);
+			mpf_sub(_c[l], _c[l-j], _c[l]);
+			//d[l] = d[l-j] + h[k] * d[l-j+1];
+			mpf_mul(_d[l], _h[k], _d[l-j+1]);
+			mpf_add(_d[l], _d[l-j], _d[l]);
+		}
+		++l;
+		//c[l] = c[l-j] - h[j];
+		mpf_sub(_c[l], _c[l-j], _h[j]);
+		//d[l] = d[l-j] + h[j]; 
+		mpf_add(_d[l], _d[l-j], _h[j]);
+	}
+
+	// Output	
+	printf("double r[28] = {");
+	for (int i=0;i<28;i++){
+	     gmp_printf ("%.*Ff", 25, _r[i]);
+	     if (i!=27) printf(", ");
+	}
+	printf("};\n");
+	printf("double c[21] = {");
+	for (int i=0;i<21;i++){
+	     gmp_printf ("%.*Ff", 25, _c[i]);
+	     if (i!=20) printf(", ");
+	}
+	printf("};\n");
+	printf("double d[21] = {");
+	for (int i=0;i<21;i++){
+	     gmp_printf ("%.*Ff", 25, _d[i]);
+	     if (i!=20) printf(", ");
+	}
+	printf("};\n");
+	exit(0);
+}
+#endif // GENERATE_CONSTANTS
