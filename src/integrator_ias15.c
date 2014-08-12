@@ -67,7 +67,8 @@ unsigned long integrator_iterations_max_exceeded= 0;	// Count how many times the
 const double safety_factor 			= 0.25;	// Maximum increase/deacrease of consecutve timesteps.
 
 
-const double h[8]	= { 0.0, 0.05626256053692215, 0.18024069173689236, 0.35262471711316964, 0.54715362633055538, 0.73421017721541053, 0.88532094683909577, 0.97752061356128750}; // Gauss Radau spacings
+// Gauss Radau spacings
+const double h[8]	= { 0.0, 0.05626256053692214646565, 0.18024069173689236498758, 0.35262471711316963737391, 0.54715362633055538300145, 0.73421017721541054105315, 0.88532094683909576809036, 0.97752061356128750189117}; 
 
 double r[28],c[21],d[21],s[9]; // These constants will be set dynamically.
 
