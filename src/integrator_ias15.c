@@ -210,8 +210,7 @@ int integrator_ias15_step() {
 	int iterations = 0;	
 	// Predictor corrector loop
 	// Stops if accuracy better than 1e-16 or if accuracy starts to oscillate
-	while(predictor_corrector_error>1e-16 && (iterations <= 2 || predictor_corrector_error_last > predictor_corrector_error)){	
-						
+	while(predictor_corrector_error>1e-16 ){	
 		predictor_corrector_error_last = predictor_corrector_error;
 		if (iterations>=integrator_iterations_max){
 			integrator_iterations_max_exceeded++;
@@ -360,8 +359,7 @@ int integrator_ias15_step() {
 						b[4][k] += tmp * c[19];
 						b[5][k] += tmp * c[20];
 						b[6][k] += tmp;
-					break;
-				}
+					} break;
 				case 8:
 				{
 					double maxak = 0.0;
@@ -477,7 +475,6 @@ int integrator_ias15_step() {
 		if (fabs(dt_new/dt_done) > 1.0) {	// New timestep is larger.
 			if (dt_new/dt_done > 1./safety_factor) dt_new = dt_done /safety_factor;	// Don't increase the timestep by too much compared to the last one.
 		}
-		//printf("step APPROVED %.20e %e %e %f %e %d %e\n",t, dt_done, dt_new, dt_new/dt_done, integrator_error, iterations, predictor_corrector_error);
 		dt = dt_new;
 	}
 
@@ -517,7 +514,6 @@ int integrator_ias15_step() {
 	copybuffers(b,br,N3);		
 	double ratio = dt/dt_done;
 	predict_next_step(ratio, N3, e, b);
-	printf("step dt=%e\n",dt);
 	return 1; // Success.
 }
 
