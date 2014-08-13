@@ -67,18 +67,19 @@ unsigned long integrator_iterations_max_exceeded= 0;	// Count how many times the
 const double safety_factor 			= 0.25;	// Maximum increase/deacrease of consecutve timesteps.
 
 
-const double h[8]	= { 
+const double h[9]	= { 
 	0.0, 
-	0.06412992574519669233127712, 
-	0.2041499092834288489277446, 
-	0.3953503910487605656156714, 
-	0.6046496089512394343843286, 
-	0.7958500907165711510722554, 
-	0.9358700742548033076687229, 
-	1.0
+	0.04463395528996985073312102185830776152357713301,
+	0.1443662570421455714852185202282149697135218395,
+	0.2868247571444305189486862397490926585531162091,
+	0.4548133151965733509677277700467869448670199439,
+	0.6280678354167276975691460395173707553318999366,
+	0.7856915206043692416424587324183296773255702825,
+	0.9086763921002060439962585419254586468929595243,
+	0.9822200848526365481867948989623209387335116018
 	}; // Gauss Lobatto spacings
 
-double r[28],c[21],d[21],s[9]; // These constants will be set dynamically.
+double r[36],c[28],d[28],s[10]; // These constants will be set dynamically.
 
 int N3allocated 		= 0; 	// Size of allocated arrays.
 int integrator_ias15_init_done 	= 0;	// Calculate coefficients once.
@@ -90,14 +91,14 @@ double* a0  = NULL;	//                      acceleration
 double* csx  = NULL;	//                      compensated summation
 double* csv  = NULL;	//                      compensated summation
 
-double* g[7] = {NULL, NULL, NULL, NULL, NULL, NULL, NULL} ;
-double* b[7] = {NULL, NULL, NULL, NULL, NULL, NULL, NULL} ;
-double* e[7] = {NULL, NULL, NULL, NULL, NULL, NULL, NULL} ;
-double* br[7] = {NULL, NULL, NULL, NULL, NULL, NULL, NULL} ;	// Used for resetting after timestep rejection
-double* er[7] = {NULL, NULL, NULL, NULL, NULL, NULL, NULL} ;
+double* g[8] = {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL} ;
+double* b[8] = {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL} ;
+double* e[8] = {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL} ;
+double* br[8] = {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL} ;	// Used for resetting after timestep rejection
+double* er[8] = {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL} ;
 
-void copybuffers(double* _a[7], double* _b[7], int N3);
-void predict_next_step(double ratio, int N3, double* _e[7], double* _b[7]);
+void copybuffers(double* _a[8], double* _b[8], int N3);
+void predict_next_step(double ratio, int N3, double* _e[8], double* _b[8]);
 double dt_last_success;
 
 void integrator_part1(){
@@ -121,7 +122,7 @@ int integrator_ias15_step(); // Does the actual timestep.
 void integrator_part2(){
 	if (!integrator_ias15_init_done){ 	// Generate coefficients.
 		int l=0;
-		for (int j=1;j<8;++j) {
+		for (int j=1;j<9;++j) {
 			for(int k=0;k<j;++k) {
 				r[l] = 1.0 / (h[j] - h[k]);
 				++l;
@@ -130,7 +131,7 @@ void integrator_part2(){
 		c[0] = -h[1];
 		d[0] =  h[1];
 		l=0;
-		for (int j=2;j<7;++j) {
+		for (int j=2;j<8;++j) {
 			++l;
 			c[l] = -h[j] * c[l-j+1];
 			d[l] =  h[1] * d[l-j+1];
@@ -152,7 +153,7 @@ void integrator_part2(){
 int integrator_ias15_step() {
 	const int N3 = 3*N;
 	if (N3 > N3allocated) {
-		for (int l=0;l<7;++l) {
+		for (int l=0;l<8;++l) {
 			g[l] = realloc(g[l],sizeof(double)*N3);
 			b[l] = realloc(b[l],sizeof(double)*N3);
 			e[l] = realloc(e[l],sizeof(double)*N3);
@@ -194,13 +195,14 @@ int integrator_ias15_step() {
 	}
 
 	for(int k=0;k<N3;k++) {
-		g[0][k] = b[6][k]*d[15] + b[5][k]*d[10] + b[4][k]*d[6] + b[3][k]*d[3]  + b[2][k]*d[1]  + b[1][k]*d[0]  + b[0][k];
-		g[1][k] = b[6][k]*d[16] + b[5][k]*d[11] + b[4][k]*d[7] + b[3][k]*d[4]  + b[2][k]*d[2]  + b[1][k];
-		g[2][k] = b[6][k]*d[17] + b[5][k]*d[12] + b[4][k]*d[8] + b[3][k]*d[5]  + b[2][k];
-		g[3][k] = b[6][k]*d[18] + b[5][k]*d[13] + b[4][k]*d[9] + b[3][k];
-		g[4][k] = b[6][k]*d[19] + b[5][k]*d[14] + b[4][k];
-		g[5][k] = b[6][k]*d[20] + b[5][k];
-		g[6][k] = b[6][k];
+		g[0][k] = b[7][k]*d[21] + b[6][k]*d[15] + b[5][k]*d[10] + b[4][k]*d[6] + b[3][k]*d[3]  + b[2][k]*d[1]  + b[1][k]*d[0]  + b[0][k];
+		g[1][k] = b[7][k]*d[22] + b[6][k]*d[16] + b[5][k]*d[11] + b[4][k]*d[7] + b[3][k]*d[4]  + b[2][k]*d[2]  + b[1][k];
+		g[2][k] = b[7][k]*d[23] + b[6][k]*d[17] + b[5][k]*d[12] + b[4][k]*d[8] + b[3][k]*d[5]  + b[2][k];
+		g[3][k] = b[7][k]*d[24] + b[6][k]*d[18] + b[5][k]*d[13] + b[4][k]*d[9] + b[3][k];
+		g[4][k] = b[7][k]*d[25] + b[6][k]*d[19] + b[5][k]*d[14] + b[4][k];
+		g[5][k] = b[7][k]*d[26] + b[6][k]*d[20] + b[5][k];
+		g[6][k] = b[7][k]*d[27] + b[6][k];
+		g[7][k] = b[7][k];
 	}
 
 	double predictor_corrector_error = 1;
@@ -222,7 +224,7 @@ int integrator_ias15_step() {
 		predictor_corrector_error = 0;
 		iterations++;
 
-		for(int n=1;n<8;n++) {							// Loop over interval using Gauss-Radau spacings
+		for(int n=1;n<9;n++) {							// Loop over interval using Gauss-Radau spacings
 
 			s[0] = dt * h[n];
 			s[1] = s[0] * s[0] / 2.;
@@ -233,6 +235,7 @@ int integrator_ias15_step() {
 			s[6] = 5. * s[5] * h[n] / 7.;
 			s[7] = 3. * s[6] * h[n] / 4.;
 			s[8] = 7. * s[7] * h[n] / 9.;
+			s[9] = 8. * s[8] * h[n] / 10.;
 
 			// Prepare particles arrays for force calculation
 			for(int i=0;i<N;i++) {						// Predict positions at interval n using b values
@@ -240,11 +243,11 @@ int integrator_ias15_step() {
 				const int k1 = 3*i+1;
 				const int k2 = 3*i+2;
 
-				double xk0  = csx[k0] + (s[8]*b[6][k0] + s[7]*b[5][k0] + s[6]*b[4][k0] + s[5]*b[3][k0] + s[4]*b[2][k0] + s[3]*b[1][k0] + s[2]*b[0][k0] + s[1]*a0[k0] + s[0]*v0[k0] );
-				particles[i].x = xk0 + x0[k0];
-				double xk1  = csx[k1] + (s[8]*b[6][k1] + s[7]*b[5][k1] + s[6]*b[4][k1] + s[5]*b[3][k1] + s[4]*b[2][k1] + s[3]*b[1][k1] + s[2]*b[0][k1] + s[1]*a0[k1] + s[0]*v0[k1] );
-				particles[i].y = xk1 + x0[k1];
-				double xk2  = csx[k2] + (s[8]*b[6][k2] + s[7]*b[5][k2] + s[6]*b[4][k2] + s[5]*b[3][k2] + s[4]*b[2][k2] + s[3]*b[1][k2] + s[2]*b[0][k2] + s[1]*a0[k2] + s[0]*v0[k2] );
+				double xk0  = csx[k0] + (s[9]*b[7][k0] + s[8]*b[6][k0] + s[7]*b[5][k0] + s[6]*b[4][k0] + s[5]*b[3][k0] + s[4]*b[2][k0] + s[3]*b[1][k0] + s[2]*b[0][k0] + s[1]*a0[k0] + s[0]*v0[k0] );
+				particles[i].x = xk0 + x0[k0];           
+				double xk1  = csx[k1] + (s[9]*b[7][k1] + s[8]*b[6][k1] + s[7]*b[5][k1] + s[6]*b[4][k1] + s[5]*b[3][k1] + s[4]*b[2][k1] + s[3]*b[1][k1] + s[2]*b[0][k1] + s[1]*a0[k1] + s[0]*v0[k1] );
+				particles[i].y = xk1 + x0[k1];          
+				double xk2  = csx[k2] + (s[9]*b[7][k2] + s[8]*b[6][k2] + s[7]*b[5][k2] + s[6]*b[4][k2] + s[5]*b[3][k2] + s[4]*b[2][k2] + s[3]*b[1][k2] + s[2]*b[0][k2] + s[1]*a0[k2] + s[0]*v0[k2] );
 				particles[i].z = xk2 + x0[k2];
 			}
 			
@@ -257,17 +260,18 @@ int integrator_ias15_step() {
 				s[5] = 5. * s[4] * h[n] / 6.;
 				s[6] = 6. * s[5] * h[n] / 7.;
 				s[7] = 7. * s[6] * h[n] / 8.;
+				s[8] = 8. * s[7] * h[n] / 9.;
 
 				for(int i=0;i<N;i++) {					// Predict velocities at interval n using b values
 					const int k0 = 3*i+0;
 					const int k1 = 3*i+1;
 					const int k2 = 3*i+2;
 
-					double vk0 =  csv[k0] + s[7]*b[6][k0] + s[6]*b[5][k0] + s[5]*b[4][k0] + s[4]*b[3][k0] + s[3]*b[2][k0] + s[2]*b[1][k0] + s[1]*b[0][k0] + s[0]*a0[k0];
+					double vk0 =  csv[k0] + s[8]*b[7][k0] + s[7]*b[6][k0] + s[6]*b[5][k0] + s[5]*b[4][k0] + s[4]*b[3][k0] + s[3]*b[2][k0] + s[2]*b[1][k0] + s[1]*b[0][k0] + s[0]*a0[k0];
 					particles[i].vx = vk0 + v0[k0];
-					double vk1 =  csv[k1] + s[7]*b[6][k1] + s[6]*b[5][k1] + s[5]*b[4][k1] + s[4]*b[3][k1] + s[3]*b[2][k1] + s[2]*b[1][k1] + s[1]*b[0][k1] + s[0]*a0[k1];
+					double vk1 =  csv[k1] + s[8]*b[7][k1] + s[7]*b[6][k1] + s[6]*b[5][k1] + s[5]*b[4][k1] + s[4]*b[3][k1] + s[3]*b[2][k1] + s[2]*b[1][k1] + s[1]*b[0][k1] + s[0]*a0[k1];
 					particles[i].vy = vk1 + v0[k1];
-					double vk2 =  csv[k2] + s[7]*b[6][k2] + s[6]*b[5][k2] + s[5]*b[4][k2] + s[4]*b[3][k2] + s[3]*b[2][k2] + s[2]*b[1][k2] + s[1]*b[0][k2] + s[0]*a0[k2];
+					double vk2 =  csv[k2] + s[8]*b[7][k2] + s[7]*b[6][k2] + s[6]*b[5][k2] + s[5]*b[4][k2] + s[4]*b[3][k2] + s[3]*b[2][k2] + s[2]*b[1][k2] + s[1]*b[0][k2] + s[0]*a0[k2];
 					particles[i].vz = vk2 + v0[k2];
 				}
 			}
@@ -344,8 +348,6 @@ int integrator_ias15_step() {
 					} break;
 				case 7:
 				{
-					double maxak = 0.0;
-					double maxb6ktmp = 0.0;
 					for(int k=0;k<N3;++k) {
 						double tmp = g[6][k];
 						double gk = at[k] - a0[k];
@@ -358,6 +360,25 @@ int integrator_ias15_step() {
 						b[4][k] += tmp * c[19];
 						b[5][k] += tmp * c[20];
 						b[6][k] += tmp;
+					break;
+				}
+				case 8:
+				{
+					double maxak = 0.0;
+					double maxb6ktmp = 0.0;
+					for(int k=0;k<N3;++k) {
+						double tmp = g[7][k];
+						double gk = at[k] - a0[k];
+						g[7][k] = (((((((gk*r[28] - g[0][k])*r[29] - g[1][k])*r[30] - g[2][k])*r[31] - g[3][k])*r[32] - g[4][k])*r[33] - g[5][k])*r[34] - g[6][k])*r[35];
+						tmp = g[7][k] - tmp;	
+						b[0][k] += tmp * c[21];
+						b[1][k] += tmp * c[22];
+						b[2][k] += tmp * c[23];
+						b[3][k] += tmp * c[24];
+						b[4][k] += tmp * c[25];
+						b[5][k] += tmp * c[26];
+						b[6][k] += tmp * c[27];
+						b[7][k] += tmp;
 						
 						// Monitor change in b[6][k] relative to at[k]. The predictor corrector scheme is converged if it is close to 0.
 						if (integrator_epsilon_global){
@@ -382,6 +403,7 @@ int integrator_ias15_step() {
 						predictor_corrector_error = maxb6ktmp/maxak;
 					}
 					
+					}
 					break;
 				}
 			}
@@ -408,7 +430,7 @@ int integrator_ias15_step() {
 				if (isnormal(ak) && ak>maxak){
 					maxak = ak;
 				}
-				const double b6k = fabs(b[6][k]); 
+				const double b6k = fabs(b[7][k]); 
 				if (isnormal(b6k) && b6k>maxb6k){
 					maxb6k = b6k;
 				}
@@ -417,7 +439,7 @@ int integrator_ias15_step() {
 		}else{
 			for(int k=0;k<N3;k++) {
 				const double ak  = at[k];
-				const double b6k = b[6][k]; 
+				const double b6k = b[7][k]; 
 				const double errork = fabs(b6k/ak);
 				if (isnormal(errork) && errork>integrator_error){
 					integrator_error = errork;
@@ -428,7 +450,7 @@ int integrator_ias15_step() {
 		double dt_new;
 		if  (isnormal(integrator_error)){ 	
 			// if error estimate is available increase by more educated guess
-		 	dt_new = pow(integrator_epsilon/integrator_error,1./7.)*dt_done;
+		 	dt_new = pow(integrator_epsilon/integrator_error,1./8.)*dt_done;
 		}else{					// In the rare case that the error estimate doesn't give a finite number (e.g. when all forces accidentally cancel up to machine precission).
 		 	dt_new = dt_done/safety_factor; // by default, increase timestep a little
 		}
@@ -464,14 +486,14 @@ int integrator_ias15_step() {
 	for(int k=0;k<N3;++k) {
 		{
 			double a = x0[k];
-			csx[k]  +=  (b[6][k]/72. + b[5][k]/56. + b[4][k]/42. + b[3][k]/30. + b[2][k]/20. + b[1][k]/12. + b[0][k]/6. + a0[k]/2.) 
+			csx[k]  +=  (b[7][k]/90. + b[6][k]/72. + b[5][k]/56. + b[4][k]/42. + b[3][k]/30. + b[2][k]/20. + b[1][k]/12. + b[0][k]/6. + a0[k]/2.) 
 					* dt_done2 + v0[k] * dt_done;
 			x0[k]    = a + csx[k];
 			csx[k]  += a - x0[k]; 
 		}
 		{
 			double a = v0[k]; 
-			csv[k]  += (b[6][k]/8. + b[5][k]/7. + b[4][k]/6. + b[3][k]/5. + b[2][k]/4. + b[1][k]/3. + b[0][k]/2. + a0[k])
+			csv[k]  += (b[7][k]/9. + b[6][k]/8. + b[5][k]/7. + b[4][k]/6. + b[3][k]/5. + b[2][k]/4. + b[1][k]/3. + b[0][k]/2. + a0[k])
 					* dt_done;
 			v0[k]    = a + csv[k];
 			csv[k]  += a - v0[k];
@@ -495,10 +517,11 @@ int integrator_ias15_step() {
 	copybuffers(b,br,N3);		
 	double ratio = dt/dt_done;
 	predict_next_step(ratio, N3, e, b);
+	printf("step dt=%e\n",dt);
 	return 1; // Success.
 }
 
-void predict_next_step(double ratio, int N3, double* _e[7], double* _b[7]){
+void predict_next_step(double ratio, int N3, double* _e[8], double* _b[8]){
 	// Predict new B values to use at the start of the next sequence. The predicted
 	// values from the last call are saved as E. The correction, BD, between the
 	// actual and predicted values of B is applied in advance as a correction.
@@ -519,6 +542,7 @@ void predict_next_step(double ratio, int N3, double* _e[7], double* _b[7]){
 		double be4 = _b[4][k] - _e[4][k];
 		double be5 = _b[5][k] - _e[5][k];
 		double be6 = _b[6][k] - _e[6][k];
+		double be7 = _b[7][k] - _e[7][k];
 
 
 		e[0][k] = q1*(_b[6][k]* 7.0 + _b[5][k]* 6.0 + _b[4][k]* 5.0 + _b[3][k]* 4.0 + _b[2][k]* 3.0 + _b[1][k]*2.0 + _b[0][k]);
@@ -528,6 +552,7 @@ void predict_next_step(double ratio, int N3, double* _e[7], double* _b[7]){
 		e[4][k] = q5*(_b[6][k]*21.0 + _b[5][k]* 6.0 + _b[4][k]);
 		e[5][k] = q6*(_b[6][k]* 7.0 + _b[5][k]);
 		e[6][k] = q7* _b[6][k];
+		e[7][k] = 0; // ignoring this for now TODO
 		
 
 		b[0][k] = e[0][k] + be0;
@@ -537,10 +562,11 @@ void predict_next_step(double ratio, int N3, double* _e[7], double* _b[7]){
 		b[4][k] = e[4][k] + be4;
 		b[5][k] = e[5][k] + be5;
 		b[6][k] = e[6][k] + be6;
+		b[7][k] = e[7][k] + be7;
 	}
 }
 
-void copybuffers(double* _a[7], double* _b[7], int N3){
+void copybuffers(double* _a[8], double* _b[8], int N3){
 	for (int i=0;i<N3;i++){	
 		_b[0][i] = _a[0][i];
 		_b[1][i] = _a[1][i];
@@ -549,5 +575,6 @@ void copybuffers(double* _a[7], double* _b[7], int N3){
 		_b[4][i] = _a[4][i];
 		_b[5][i] = _a[5][i];
 		_b[6][i] = _a[6][i];
+		_b[7][i] = _a[7][i];
 	}
 }
