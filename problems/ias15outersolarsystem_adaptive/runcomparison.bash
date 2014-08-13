@@ -145,7 +145,7 @@ make problemgenerator
 rm -rf energy_*.txt
 
 
-for t in $(seq 2 2)
+for t in $(seq 0 7)
 do
 	echo "###################################"
 	echo "Running test case $t"
@@ -163,10 +163,10 @@ do
 	#runnbodycanonical ias15 1 $runtime
      
 	make -s ra15
-	runepsilonnbody ra15 -14 -6 $runtime
+	#runepsilonnbody ra15 -14 -6 $runtime
 
 	make -s wh
-	rundtnbody wh 0 4 $runtime
+	#rundtnbody wh 0 4 $runtime
 
 	pushd mercury
 	rm -f *.tmp
@@ -175,7 +175,7 @@ do
 	rm -f output.txt
 	#runepsilon bs 
 	runepsilon bs2 $runtime
-	runepsilon radau $runtime
+	#runepsilon radau $runtime
 	#runepsilon hybrid 
 	rundt mvs $runtime
 	popd
