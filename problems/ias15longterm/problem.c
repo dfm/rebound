@@ -40,81 +40,37 @@
 #include "tools.h"
 #include "particle.h"
 #include "boundaries.h"
-
-double ss_pos[6][3] = 
-{
-	{-4.06428567034226e-3,	-6.08813756435987e-3,	-1.66162304225834e-6	}, // Sun
-	{+3.40546614227466e+0,	+3.62978190075864e+0,	+3.42386261766577e-2	}, // Jupiter
-	{+6.60801554403466e+0,	+6.38084674585064e+0,	-1.36145963724542e-1	}, // Saturn
-	{+1.11636331405597e+1,	+1.60373479057256e+1,	+3.61783279369958e-1	}, // Uranus
-	{-3.01777243405203e+1,	+1.91155314998064e+0,	-1.53887595621042e-1	}, // Neptune
-	{-2.13858977531573e+1,	+3.20719104739886e+1,	+2.49245689556096e+0	}  // Pluto
-};
-double ss_vel[6][3] = 
-{
-	{+6.69048890636161e-6,	-6.33922479583593e-6,	-3.13202145590767e-9	}, // Sun
-	{-5.59797969310664e-3,	+5.51815399480116e-3,	-2.66711392865591e-6	}, // Jupiter
-	{-4.17354020307064e-3,	+3.99723751748116e-3,	+1.67206320571441e-5	}, // Saturn
-	{-3.25884806151064e-3,	+2.06438412905916e-3,	-2.17699042180559e-5	}, // Uranus
-	{-2.17471785045538e-4,	-3.11361111025884e-3,	+3.58344705491441e-5	}, // Neptune
-	{-1.76936577252484e-3,	-2.06720938381724e-3,	+6.58091931493844e-4	}  // Pluto
-};
-
-double ss_mass[6] =
-{
-	1.00000597682, 	// Sun + inner planets
-	1./1047.355,	// Jupiter
-	1./3501.6,	// Saturn
-	1./22869.,	// Uranus
-	1./19314.,	// Neptune
-	0.		// Pluto
-};
-
-const double k	 	= 0.01720209895;	// Gaussian constant 
-#ifdef OPENGL
-extern int display_wire;
-#endif // OPENGL
+#include "problem.h"
 
 double energy();
-const double jupiter_orbital_period = 4332.589;
+const double jupiter_orbital_period = 2.*M_PI;
 double timing_start;
+
+void harmonic(){
+	particles[0].ax += -particles[0].x/particles[0].m;
+}
 
 void problem_init(int argc, char* argv[]){
 	// Setup constants
 	dt 		= input_get_double(argc,argv,"dt",0.1);			// days
-	N_active	= 5;
-	tmax		= jupiter_orbital_period*input_get_double(argc,argv,"orbits",1e6);	// number of orbits
-	G		= k*k;
+	tmax		= jupiter_orbital_period*input_get_double(argc,argv,"orbits",1e10);	// number of orbits
+	problem_additional_forces = harmonic;
+	G		= 0;
 #ifdef INTEGRATOR_IAS15
 	integrator_epsilon = input_get_double(argc,argv,"integrator_epsilon",1e-3);
 #endif // INTEGRATOR_IAS15
 
-#ifdef OPENGL
-	display_wire	= 1;			// Show orbits.
-#endif // OPENGL
 	init_boxwidth(200); 			// Init box with width 200 astronomical units
 
 	// Initial conditions
-	for (int i=0;i<6;i++){
+	for (int i=0;i<1;i++){
 		struct particle p;
-		p.x  = ss_pos[i][0]; 		p.y  = ss_pos[i][1];	 	p.z  = ss_pos[i][2];
-		p.vx = ss_vel[i][0]; 		p.vy = ss_vel[i][1];	 	p.vz = ss_vel[i][2];
-		p.ax = 0; 			p.ay = 0; 			p.az = 0;
-		p.m  = ss_mass[i];
+		p.x  = 1; 		p.y  = 0;	 	p.z  = 0;
+		p.vx = 1; 		p.vy = 0;	 	p.vz = 0;
+		p.ax = 0; 		p.ay = 0; 		p.az = 0;
+		p.m  = 1;
 		particles_add(p); 
 	}
-#ifdef INTEGRATOR_WH
-	// Move to heliocentric frame (required by WHM)
-	for (int i=1;i<N;i++){
-		particles[i].x -= particles[0].x;	particles[i].y -= particles[0].y;	particles[i].z -= particles[0].z;
-		particles[i].vx -= particles[0].vx;	particles[i].vy -= particles[0].vy;	particles[i].vz -= particles[0].vz;
-	}
-	particles[0].x = 0;	particles[0].y = 0;	particles[0].z = 0;
-	particles[0].vx= 0;	particles[0].vy= 0;	particles[0].vz= 0;
-#else
-	// Move to barycentric frame
-	tools_move_to_center_of_momentum();
-#endif // INTEGRATOR_WH
 	mpf_set_default_prec(512);
 	energy(); // calculate and store initial energy
 	
@@ -144,6 +100,7 @@ double energy(){
 	mpf_t temp;
 	mpf_init(temp);
 	for (int i=0;i<N;i++){
+
 		mpf_set_d(temp,particles[i].vx*particles[i].m);
 		mpf_add(vx, vx, temp);
 		mpf_set_d(temp,particles[i].vy*particles[i].m);
@@ -159,20 +116,13 @@ double energy(){
 	mpf_div(vz,vz,mass);
 
 	for (int i=0;i<N;i++){
-		for (int j=0;j<i;j++){
-			double dx = particles[i].x - particles[j].x;
-			double dy = particles[i].y - particles[j].y;
-			double dz = particles[i].z - particles[j].z;
-			double r = sqrt(dx*dx + dy*dy + dz*dz + softening*softening);
-			mpf_set_d(temp,-G*particles[i].m*particles[j].m/r);
-			mpf_add(energy_potential, energy_potential,temp);
+		double dx = particles[i].x;
+		mpf_set_d(temp,0.5*particles[i].m*dx*dx);
+		mpf_add(energy_potential, energy_potential,temp);
 			
-		}
 	
-		double dvx = particles[i].vx-mpf_get_d(vx);
-		double dvy = particles[i].vy-mpf_get_d(vy);
-		double dvz = particles[i].vz-mpf_get_d(vz);
-		mpf_set_d(temp,1./2.*particles[i].m * (dvx*dvx + dvy*dvy + dvz*dvz));
+		double dvx = particles[i].vx;
+		mpf_set_d(temp,1./2.*particles[i].m * (dvx*dvx ));
 		mpf_add(energy_kinetic, energy_kinetic,temp);
 		
 	}
@@ -204,6 +154,7 @@ double output_interval 	= 1.01;
 double output_next	= 100;
 void problem_output(){
 	if (output_next<t){
+		printf("dt=%e\n",dt);
 		output_next *= output_interval;
 		char filename[4096];
 		sprintf(filename,"energy_%s.txt",input_arguments);
