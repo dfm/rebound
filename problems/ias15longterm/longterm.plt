@@ -1,6 +1,6 @@
 #!/bin/gnuplot
 set output "longterm.pdf"
-set term pdf enhanced color dashed  size 5in,2in
+set term pdf enhanced color dashed  size 7in,4in
 set key bottom right
 set logscale xy
 set autoscale fix
@@ -21,7 +21,8 @@ set format x "10^{%T}"
 plot \
 "<cat mercury*/energy.txt"  u ($2/4332.0):(abs($5)) lc rgb "dark-gray" pt 7 notit, 1/0 w p t "Mercury MVS" lc rgb "dark-gray" ps 1.5  pt 7 , \
 "<cat ias15/energy_orbits_1.000e+10__integrator_epsilon_5.000e-09.txt" w p lt 1 pt 7 notit , 1/0 w p t "IAS15" lt 1 pt 7 ps 1.5, \
-"<cat ias15_cs_rms/energy_orbits_1.000*" w p lt 2 pt 7 notit , 1/0 w p t "IAS15 cs" lt 2 pt 7 ps 1.5, \
+"<cat ias15_cs_rms/energy_orbits_1.000*" w p ps 0.1 lt 2 pt 7 notit , 1/0 w p t "IAS15 cs" lt 2 pt 7 ps 1.5, \
+"< sort -k 1 -g ias15_cs_rms/energy_orbits_1.000* | awk -f rms.awk" w p lt 3 pt 7 notit , 1/0 w p t "IAS15 cs" lt 2 pt 7 ps 1.5, \
 5e-16*sqrt(x) ls 3 lw 3 t "t^{0.5}", \
 
 
