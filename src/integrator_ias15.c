@@ -435,7 +435,7 @@ int integrator_ias15_step() {
 		if (fabs(dt_new/dt_done) > 1.0) {	// New timestep is larger.
 			if (dt_new/dt_done > 1./safety_factor) dt_new = dt_done /safety_factor;	// Don't increase the timestep by too much compared to the last one.
 		}
-		dt = dt_new*0.5;
+		dt = dt_new;
 	}
 
 	// Find new position and velocity values at end of the sequence
