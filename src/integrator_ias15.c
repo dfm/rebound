@@ -62,11 +62,11 @@ void integrator_generate_constants();
 #endif
 
 int 	integrator_force_is_velocitydependent	= 1;	// Turn this off to safe some time if the force is not velocity dependent.
-double 	integrator_epsilon 			= 5e-9;	// Precision parameter 
+double 	integrator_epsilon 			= 1e-9;	// Precision parameter 
 							// If it is zero, then a constant timestep is used. 
 int	integrator_epsilon_global		= 1;	// if 1: estimate the fractional error by max(acceleration_error)/max(acceleration), where max is take over all particles.
 							// if 0: estimate the fractional error by max(acceleration_error/acceleration).
-double 	integrator_min_dt 			= 0;	// Minimum timestep used as a floor when adaptive timestepping is enabled.
+double 	integrator_min_dt 			= 1e-14;	// Minimum timestep used as a floor when adaptive timestepping is enabled.
 double	integrator_error			= 0;	// Error estimate in last timestep (used for debugging only)
 unsigned int integrator_iterations_max		= 12;	// Maximum number of iterations in predictor/corrector loop
 unsigned long integrator_iterations_max_exceeded= 0;	// Count how many times the iteration did not converge
@@ -393,6 +393,7 @@ int integrator_ias15_step() {
 					maxb6k = b6k;
 				}
 			}
+		printf("t= %e  dt= %e              \t iter= %d   b6kmax= %e   akmax =   \t%e\n",t,dt , iterations, maxb6k, maxak);
 			integrator_error = maxb6k/maxak;
 		}else{
 			for(int k=0;k<N3;k++) {

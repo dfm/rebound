@@ -60,7 +60,7 @@ void problem_init(int argc, char* argv[]){
 	const double k 	= 0.01720209895;	// Gaussian constant 
 	G		= k*k;
 
-	integrator_epsilon = input_get_double(argc,argv,"integrator_epsilon",0.01);
+	integrator_epsilon = input_get_double(argc,argv,"integrator_epsilon",integrator_epsilon);
 	integrator_force_is_velocitydependent = 0;
 	
 #ifdef OPENGL

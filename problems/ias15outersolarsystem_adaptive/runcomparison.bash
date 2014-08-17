@@ -87,12 +87,11 @@ function runepsilonnbody {
 }
 function runnbodycanonical {
 	echo "Running REBOUND canonical $1"
-	canonical="5e-9"
 	dt="10."
 	if [ $2 -eq 1 ]; then 
-		utime="$( TIMEFORMAT='%R';time ( ./nbody --integrator_epsilon=$canonical --dt=$dt  --outputenergy=$2 2>&1 ) 2>&1 1>/dev/null )"
+		utime="$( TIMEFORMAT='%R';time ( ./nbody --dt=$dt  --outputenergy=$2 2>&1 ) 2>&1 1>/dev/null )"
 	else
-		utime="$( TIMEFORMAT='%R';time ( doalarm $3 ./nbody --integrator_epsilon=$canonical --dt=$dt  --outputenergy=$2 2>&1 ) 2>&1 1>/dev/null )"
+		utime="$( TIMEFORMAT='%R';time ( doalarm $3 ./nbody --dt=$dt  --outputenergy=$2 2>&1 ) 2>&1 1>/dev/null )"
 	fi
 	if [ ! -f energy.txt ]; then
 		energy="-1"
@@ -105,8 +104,8 @@ function runnbodycanonical {
 		if [ $2 -eq 1 ]; then 
 			mv energy_timeseries.txt energy_timeseries_$1.txt
 		else
-			echo "$utime $energy $canonical" >> energy_$1_canonical.txt 
-			echo "$utime $energy $canonical"  
+			echo "$utime $energy " >> energy_$1_canonical.txt 
+			echo "$utime $energy "  
 		fi
 	fi
 	rm -f energy.txt
@@ -145,7 +144,7 @@ make problemgenerator
 rm -rf energy_*.txt
 
 
-for t in $(seq 2 2)
+for t in $(seq 0 7)
 do
 	echo "###################################"
 	echo "Running test case $t"
@@ -158,7 +157,7 @@ do
 	./problemgenerator --testcase=$t
 
 	make -s ias15
-	runepsilonnbody ias15 -10 -3 $runtime
+	runepsilonnbody ias15 -11 -5 $runtime
         runnbodycanonical ias15 0 $runtime
 	#runnbodycanonical ias15 1 $runtime
      
