@@ -49,7 +49,7 @@ int main(int argc, char* argv[]){
 			perturber.x  = semia*10.; 
 			perturber.y  = 0; 
 			perturber.z  = 0; 
-			double inc_perturber = 89.9; // 80.
+			double inc_perturber = 88; // 80.
 			perturber.vx = 0; 
 			perturber.vy = cos(inc_perturber/180.*M_PI)*sqrt(G*(star.m+perturber.m)/perturber.x); 
 			perturber.vz = sin(inc_perturber/180.*M_PI)*sqrt(G*(star.m+perturber.m)/perturber.x); 
@@ -377,6 +377,38 @@ int main(int argc, char* argv[]){
 			particles[0].vx= 0;	particles[0].vy= 0;	particles[0].vz= 0;
 			tmax		= 365e7*sqrt(scale*scale*scale);		// 10.000.000 yr
 			timescale  = sqrt(scale*scale*scale);
+			break;
+		}
+		case 9: // kozai test getting stuck
+		{
+			double ss_pos[3][3] = 
+			{
+				{-7.078841e-01,   -2.615421e-03,   -5.543430e-01},
+				{-7.080543e-01,   -2.698939e-03,   -5.543991e-01},
+				{ 7.149646e+00,    2.642411e-02,    5.598870e+00 },
+			};
+			double ss_vel[3][3] = 
+			{
+				{ -4.045634e-03,   1.072532e-02,    -1.313862e-02},
+				{ 4.367986e-01,    -1.072698e+00,   1.273079e+00},
+				{ -3.223527e-03,   1.654099e-05,    4.078342e-03},
+			};
+
+			double ss_mass[3] =
+			{
+				1.,0.01,0.1
+			};
+			// Initial conditions
+			for (int i=0;i<3;i++){
+				struct particle p;
+				p.x  = ss_pos[i][0]; 		p.y  = ss_pos[i][1];	 	p.z  = ss_pos[i][2];
+				p.vx = ss_vel[i][0]; 		p.vy = ss_vel[i][1];	 	p.vz = ss_vel[i][2];
+				p.ax = 0; 			p.ay = 0; 			p.az = 0;
+				p.m  = ss_mass[i];
+				particles[N++] = p; 
+			}
+			tmax		= 365000;		// 10.000.000 yr
+			timescale  = 0.0000001;
 			break;
 		}
 		default:
