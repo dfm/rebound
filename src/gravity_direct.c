@@ -61,6 +61,9 @@ void gravity_calculate_acceleration(){
 #pragma omp parallel for schedule(guided)
 #ifdef INTEGRATOR_WH
 		for (int i=1; i<N; i++){
+			double csx = 0;
+			double csy = 0;
+			double csz = 0;
 		for (int j=1; j<_N_active; j++){
 #else //INTEGRATOR_WH
 		for (int i=0; i<N; i++){
