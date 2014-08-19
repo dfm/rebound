@@ -121,7 +121,7 @@ int main(int argc, char* argv[]){
 			perturber.x  = semia*10.; 
 			perturber.y  = 0; 
 			perturber.z  = 0; 
-			double inc_perturber = 89.9; // 80.
+			double inc_perturber = 88; // 80.
 			perturber.vx = 0; 
 			perturber.vy = cos(inc_perturber/180.*M_PI)*sqrt(G*(star.m+perturber.m)/perturber.x); 
 			perturber.vz = sin(inc_perturber/180.*M_PI)*sqrt(G*(star.m+perturber.m)/perturber.x); 
