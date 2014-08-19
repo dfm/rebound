@@ -172,10 +172,10 @@ do
 	rm -f *.dmp
 	rm -f *.out
 	rm -f output.txt
-	#runepsilon bs 
+	runepsilon bs $runtime  
 	runepsilon bs2 $runtime
 	runepsilon radau $runtime
-	#runepsilon hybrid 
+	runepsilon hybrid 
 	rundt mvs $runtime
 	popd
 
