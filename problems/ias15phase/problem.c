@@ -205,6 +205,7 @@ void problem_output(){
 	if (r_flag==1){
 		r_flag=2;
 		dt = dt_init;
+		t = tmax/2.;
 		for (int i=0;i<N;i++){
 			particles[i].vx *= -1.;
 			particles[i].vy *= -1.;

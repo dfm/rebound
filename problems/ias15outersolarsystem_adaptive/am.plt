@@ -75,14 +75,14 @@ do for [i=0:7]{
 	}
 
 	plot \
-	"testcase_".i."/energy_ias15.txt" 		u 1:(abs((sqrt($3*$3+$4*$4+$5*$5)-sqrt($6*$6+$7*$7+$8*$8))/sqrt($6*$6+$7*$7+$8*$8))) lt 1 t "IAS15", \
-	"testcase_".i."/energy_ra15.txt" 		u 1:(abs((sqrt($3*$3+$4*$4+$5*$5)-sqrt($6*$6+$7*$7+$8*$8))/sqrt($6*$6+$7*$7+$8*$8))) lt 3 t "RA15 (REBOUND)", \
-	"testcase_".i."/energy_wh.txt" 			u 1:(abs((sqrt($3*$3+$4*$4+$5*$5)-sqrt($6*$6+$7*$7+$8*$8))/sqrt($6*$6+$7*$7+$8*$8))) lt 4 t "      WH (REBOUND)",  \
-	"testcase_".i."/energy_bs2.txt" 		u 1:(abs((sqrt($3*$3+$4*$4+$5*$5)-sqrt($6*$6+$7*$7+$8*$8))/sqrt($6*$6+$7*$7+$8*$8))) lt 5 t "BS2 (MERCURY)",  \
-	"testcase_".i."/energy_radau.txt" 		u 1:(abs((sqrt($3*$3+$4*$4+$5*$5)-sqrt($6*$6+$7*$7+$8*$8))/sqrt($6*$6+$7*$7+$8*$8))) lt 2 t "  RADAU (MERCURY)" ,  \
-	"testcase_".i."/energy_mvs.txt" 		u 1:(abs((sqrt($3*$3+$4*$4+$5*$5)-sqrt($6*$6+$7*$7+$8*$8))/sqrt($6*$6+$7*$7+$8*$8))) lt 7 t "      MWS (MERCURY)",  \
-	"testcase_".i."/energy_ias15_canonical.txt" 	u 1:(abs((sqrt($3*$3+$4*$4+$5*$5)-sqrt($6*$6+$7*$7+$8*$8))/sqrt($6*$6+$7*$7+$8*$8))) notit ps 4 lt 6, \
-	"testcase_".i."/energy_ias15_canonical.txt" 	u 1:(abs((sqrt($3*$3+$4*$4+$5*$5)-sqrt($6*$6+$7*$7+$8*$8))/sqrt($6*$6+$7*$7+$8*$8))) notit lt 1, \
+	"testcase_".i."/energy_ias15.txt" 		u 1:(abs((sqrt($3*$3+$4*$4+$5*$5)-sqrt($6*$6+$7*$7+$8*$8))/sqrt($6*$6+$7*$7+$8*$8))+1e-16) lt 1 t "IAS15", \
+	"testcase_".i."/energy_ra15.txt" 		u 1:(abs((sqrt($3*$3+$4*$4+$5*$5)-sqrt($6*$6+$7*$7+$8*$8))/sqrt($6*$6+$7*$7+$8*$8))+1e-16) lt 3 t "RA15 (REBOUND)", \
+	"testcase_".i."/energy_wh.txt" 			u 1:(abs((sqrt($3*$3+$4*$4+$5*$5)-sqrt($6*$6+$7*$7+$8*$8))/sqrt($6*$6+$7*$7+$8*$8))+1e-16) lt 4 t "      WH (REBOUND)",  \
+	"testcase_".i."/energy_bs2.txt" 		u 1:(abs((sqrt($3*$3+$4*$4+$5*$5)-sqrt($6*$6+$7*$7+$8*$8))/sqrt($6*$6+$7*$7+$8*$8))+1e-16) lt 5 t "BS2 (MERCURY)",  \
+	"testcase_".i."/energy_radau.txt" 		u 1:(abs((sqrt($3*$3+$4*$4+$5*$5)-sqrt($6*$6+$7*$7+$8*$8))/sqrt($6*$6+$7*$7+$8*$8))+1e-16) lt 2 t "  RADAU (MERCURY)" ,  \
+	"testcase_".i."/energy_mvs.txt" 		u 1:(abs((sqrt($3*$3+$4*$4+$5*$5)-sqrt($6*$6+$7*$7+$8*$8))/sqrt($6*$6+$7*$7+$8*$8))+1e-16) lt 7 t "      MWS (MERCURY)",  \
+	"testcase_".i."/energy_ias15_canonical.txt" 	u 1:(abs((sqrt($3*$3+$4*$4+$5*$5)-sqrt($6*$6+$7*$7+$8*$8))/sqrt($6*$6+$7*$7+$8*$8))+1e-16) notit ps 4 lt 6, \
+	"testcase_".i."/energy_ias15_canonical.txt" 	u 1:(abs((sqrt($3*$3+$4*$4+$5*$5)-sqrt($6*$6+$7*$7+$8*$8))/sqrt($6*$6+$7*$7+$8*$8))+1e-16) notit lt 1, \
 	#"testcase_".i."/energy_ias15.txt" 		u 1:(asin(1.-($3*$6+$4*$7+$5*$8)/(sqrt($3*$3+$4*$4+$5*$5)*sqrt($6*$6+$7*$7+$8*$8)))) lt 1 t "IAS15", \
 	#"testcase_".i."/energy_ra15.txt" 		u 1:(asin(1.-($3*$6+$4*$7+$5*$8)/(sqrt($3*$3+$4*$4+$5*$5)*sqrt($6*$6+$7*$7+$8*$8)))) lt 3 t "RA15 (REBOUND)", \
 	#"testcase_".i."/energy_wh.txt" 			u 1:(asin(1.-($3*$6+$4*$7+$5*$8)/(sqrt($3*$3+$4*$4+$5*$5)*sqrt($6*$6+$7*$7+$8*$8)))) lt 4 t "      WH (REBOUND)",  \

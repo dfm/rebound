@@ -11,4 +11,5 @@ set st d lp
 
 plot \
 "energy_wh.txt" u 3:4 t "   WH (REBOUND)",  \
-"energy_ias15.txt" u 3:4 t "IAS15" , \
+"energy_mvs.txt" u 1:(abs($2-$3)) lc rgb "blue"  t "MVS (MERCURY)" , \
+"energy_ias15.txt" u 3:4 t "IAS15"  lc rgb "dark-green", \
