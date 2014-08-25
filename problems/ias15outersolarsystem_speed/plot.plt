@@ -13,4 +13,4 @@ set st d lp
 
 plot \
 "energy_wh.txt" t "WH (REBOUND)",  \
-"energy_ias15.txt" t "IAS15", \
+"energy_ias15.txt" t "IAS15"  lc rgb "dark-green", \
