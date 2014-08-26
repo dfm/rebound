@@ -1,17 +1,29 @@
 #!/bin/gnuplot
-set output "plot.png" 
-set terminal png enhanced
+set output "plot.pdf" 
+set terminal pdf dashed monochrome size 6in,5in
 set logscale xyx2y2
 set autoscale fix
-set yrange [5e-17:]
+set yrange [5e-17:1]
+set xrange [1e-3:1e4]
 set xlabel "wall time [s]"
 set ylabel "relative energy error"
+set multiplot layout 3,2
+
+set format y "%g" 
+set format y "10^{%S}"
+set ytics 1000
+
+
+do for [i=0:5] {
+
+set title "".(10**i)." orbits"
 
 
 plot \
-for [i=0:7] "<cat  testcase_".i."/energy_ias15_canonical.txt"  	u 1:($2+1e-16) notit ps 2 lt (i+1) w p, \
-for [i=0:7] "<cat  testcase_".i."/energy_wh.txt"  		u 1:($2+1e-16) notit ps 1  lt (i+1) w l, \
-for [i=0:7] "<cat  testcase_".i."/energy_mvs.txt"  		u 1:($2+1e-16) notit ps 1  lt (i+1) w lp, \
-for [i=0:7] "<cat  testcase_".i."/energy_wh.txt"       		u (1.):(1.e-20) t "10^{".i."} orbits" ps 1  lt (i+1) w lp
+"<cat  testcase_".i."/energy_ias15_canonical.txt"  	u 1:($2+1e-16) pt 7 ps 2 lt 1 t "IAS15" w p, \
+"<cat  testcase_".i."/energy_wh.txt"  			u 1:($2+1e-16) ps 1 lt 1 t "WH (REBOUND)" w l,  \
+"<cat  testcase_".i."/energy_mvs.txt"  			u 1:($2+1e-16) ps 1 lt 2 t "MVS (MERCURY)" w l, \
 
 
+
+}
