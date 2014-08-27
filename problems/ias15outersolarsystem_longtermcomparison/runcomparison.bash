@@ -116,7 +116,7 @@ make problemgenerator
 rm -rf energy_*.txt
 
 
-for t in $(seq 3 3)
+for t in $(seq 5 5)
 do
 	echo "###################################"
 	echo "Running test case $t"
@@ -133,7 +133,7 @@ do
 	#runepsilonnbody ra15 -14 -6 $runtime
 
 	make -s wh
-	mindt=$(echo "scale=16; l(e($t*l(10))/10000.)/l(10) " |bc -l)
+	mindt=$(echo "scale=16; l(e($t*l(10))/1000000.)/l(10) " |bc -l)
 	rundtnbody wh $mindt 4 
 
 	pushd mercury

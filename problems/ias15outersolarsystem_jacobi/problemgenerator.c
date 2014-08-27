@@ -39,11 +39,11 @@ int main(int argc, char* argv[]){
 	}
 	
 	
-	double _N = 20;
+	double _N = 100;
 	for (int i=0;i<_N;i++){
 		struct particle p;
 		p.x = 5.*sin((double)i/(double)_N*2.*M_PI); 			p.y = 5.*cos((double)i/(double)_N*2.*M_PI); 					p.z = 0;
-		p.vx = -0.2*sqrt(G*(1.+1.e-3))*cos((double)i/(double)_N*2.*M_PI); 	p.vy = 0.2*sqrt(G*(1.+1.e-3))*sin((double)i/(double)_N*2.*M_PI); 			p.vz = 0;
+		p.vx = -0.123*sqrt(G*(1.+1.e-3))*cos((double)i/(double)_N*2.*M_PI); 	p.vy = 0.123*sqrt(G*(1.+1.e-3))*sin((double)i/(double)_N*2.*M_PI); 			p.vz = 0;
 		p.ax = 0; 			p.ay = 0; 			p.az = 0;
 		p.m  = 0;
 		particles[N++] = p; 

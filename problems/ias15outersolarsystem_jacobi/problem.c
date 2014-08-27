@@ -61,6 +61,7 @@ void problem_init(int argc, char* argv[]){
 	outputenergy	= input_get_int(argc,argv,"outputenergy",0);
 	const double k 	= 0.01720209895;	// Gaussian constant 
 	G		= k*k;
+	N_active = 2;
 
 	integrator_epsilon = input_get_double(argc,argv,"integrator_epsilon",integrator_epsilon);
 	integrator_force_is_velocitydependent = 0;
@@ -82,6 +83,36 @@ void problem_init(int argc, char* argv[]){
 	energy_init = energy();
 	jacobi_init = jacobi();
 	aminit = angular_momentum();
+	{
+
+		FILE* of1 = fopen("orbits_jupiter.txt","w"); 
+		for(int i=1;i<2;i++){
+			struct orbit o = tools_p2orbit(particles[i],particles[0]);
+			for (double trueanom=0; trueanom < 2.*M_PI; trueanom+=M_PI/100.) {
+				//convert degrees into radians
+				double radius = o.a * (1. - o.e*o.e) / (1. + o.e*cos(trueanom));
+				double x = radius*cos(trueanom);
+				double y = radius*sin(trueanom);
+				fprintf(of1,"%e %e\n",cos(o.omega)*x+sin(o.omega)*y,-sin(o.omega)*x+cos(o.omega)*y);
+			}
+			fprintf(of1,"\n");
+		}
+		fclose(of1);
+
+		FILE* of2 = fopen("orbits_init.txt","w"); 
+		for(int i=2;i<N;i++){
+			struct orbit o = tools_p2orbit(particles[i],particles[0]);
+			for (double trueanom=0; trueanom < 2.*M_PI; trueanom+=M_PI/100.) {
+				//convert degrees into radians
+				double radius = o.a * (1. - o.e*o.e) / (1. + o.e*cos(trueanom));
+				double x = radius*cos(trueanom);
+				double y = radius*sin(trueanom);
+				fprintf(of2,"%e %e\n",cos(o.omega)*x+sin(o.omega)*y,-sin(o.omega)*x+cos(o.omega)*y);
+			}
+			fprintf(of2,"\n");
+		}
+		fclose(of2);
+	}
 }
 
 void problem_inloop(){
@@ -198,15 +229,18 @@ void problem_output(){
 			fclose(of);
 		}
 	}
-	{
-	FILE* of = fopen("jacobi.txt","a+"); 
-	double* jacobi_final = jacobi();
-	for(int i=2;i<N;i++){
-		double rel_jacobi = fabs((jacobi_final[i-2]-jacobi_init[i-2])/jacobi_init[i-2]);
-		fprintf(of,"%.20e %.20e\n",t, rel_jacobi);
-	}
-	fclose(of);
-	}
+		FILE* of = fopen("position.txt","a+"); 
+		for(int i=2;i<N;i++){
+			double dx = particles[i].x - particles[1].x;
+			double dy = particles[i].y - particles[1].y;
+			double dz = particles[i].z - particles[1].z;
+			double r2 = sqrt(dx*dx + dy*dy + dz*dz );
+			if (r2<0.1){
+				fprintf(of,"%.20e %.20e %.20e\n",particles[i].x, particles[i].y, r2);
+				fprintf(of,"%.20e %.20e\n",particles[1].x, particles[1].y);
+			}
+		}
+		fclose(of);
 }
 
 void problem_finish(){
@@ -228,6 +262,22 @@ void problem_finish(){
 		fprintf(of,"%.20e %.20e\n",t, rel_jacobi);
 	}
 	fclose(of);
+	}
+	{
+
+		FILE* of2 = fopen("orbits_final.txt","w"); 
+		for(int i=2;i<N;i++){
+			struct orbit o = tools_p2orbit(particles[i],particles[0]);
+			for (double trueanom=0; trueanom < 2.*M_PI; trueanom+=M_PI/100.) {
+				//convert degrees into radians
+				double radius = o.a * (1. - o.e*o.e) / (1. + o.e*cos(trueanom));
+				double x = radius*cos(trueanom);
+				double y = radius*sin(trueanom);
+				fprintf(of2,"%e %e\n",cos(o.omega)*x+sin(o.omega)*y,-sin(o.omega)*x+cos(o.omega)*y);
+			}
+			fprintf(of2,"\n");
+		}
+		fclose(of2);
 	}
 }
 

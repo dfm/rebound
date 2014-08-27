@@ -1,20 +1,21 @@
 #!/bin/gnuplot
 set output "plot.pdf" 
-set terminal pdf dashed size 6in,5in
+set terminal pdf size 9in,2in
 set logscale xyx2y2
 set autoscale fix
 set yrange [5e-17:1]
 set xrange [1e-3:1e4]
 set xlabel "wall time [s]"
 set ylabel "relative energy error"
-set multiplot layout 3,2
+set multiplot layout 1,3
 
 set format y "%g" 
 set format y "10^{%S}"
 set ytics 1000
 
 
-do for [i=0:5] {
+#do for [i=0:5] {
+do for [i in "1 3 5"] {
 
 set title "".(10**i)." orbits"
 
