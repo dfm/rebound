@@ -1,6 +1,6 @@
 #!/bin/gnuplot
 set output "plot.pdf" 
-set terminal pdf dashed monochrome size 6in,5in
+set terminal pdf dashed size 6in,5in
 set logscale xyx2y2
 set autoscale fix
 set yrange [5e-17:1]
@@ -20,9 +20,9 @@ set title "".(10**i)." orbits"
 
 
 plot \
-"<cat  testcase_".i."/energy_ias15_canonical.txt"  	u 1:($2+1e-16) pt 7 ps 2 lt 1 t "IAS15" w p, \
-"<cat  testcase_".i."/energy_wh.txt"  			u 1:($2+1e-16) ps 1 lt 1 t "WH (REBOUND)" w l,  \
-"<cat  testcase_".i."/energy_mvs.txt"  			u 1:($2+1e-16) ps 1 lt 2 t "MVS (MERCURY)" w l, \
+"<cat  testcase_".i."/energy_ias15_canonical.txt"  	u 1:($2+1e-16) pt 7 ps 2 lt 1 lc rgb "dark-green" t "IAS15" w p, \
+"<cat  testcase_".i."/energy_wh.txt"  			u 1:($2+1e-16) ps 1 lt 1 lc rgb "dark-red" t "WH (REBOUND)" w lp,  \
+"<cat  testcase_".i."/energy_mvs.txt"  			u 1:($2+1e-16) ps 1 lt 2 lc rgb "dark-blue" t "MVS (MERCURY)" w lp, \
 
 
 

@@ -24,11 +24,11 @@ function runepsilon {
 	done
 }
 function rundt {
-	echo "Running mercury dt $1"
+	echo "Running mercury dt $1 /  $2 /  $3"
 	rm -f ../energy_$1.txt
-	points=10
-	min=0
-	max=4
+	points=20
+	min=$2
+	max=$3
 	for i in $(seq 0 $points)
 	do 
 		timescale=$(cat ../timescale.txt)
@@ -42,13 +42,8 @@ function rundt {
 		sed "s/STEPSIZE/$e/g" param.template3 > param.in
 		utime="$( TIMEFORMAT='%R';time ( ./mercury6 ) 2>&1 1>/dev/null )"
 		energy="$(../mercury_read/mercury_energy big.in big.dmp)"
-		if [[ $utime == *Alarm* ]]; then
-			echo "Did not finish in time."
-			echo "$2 1. $e" >> ../energy_$1.txt 
-		else
-			echo "$utime $energy $e" >> ../energy_$1.txt 
-			echo "$utime $energy $e"  
-		fi
+		echo "$utime $energy $e" >> ../energy_$1.txt 
+		echo "$utime $energy $e"  
 		rm -f param.template?
 
 	done
@@ -97,7 +92,7 @@ function runnbodycanonical {
 function rundtnbody {
 	echo "Running REBOUND dt $1"
 	rm -f energy_$1.txt
-	points=10
+	points=20
 	min=$2
 	max=$3
 	for i in $(seq 0 $points)
@@ -121,28 +116,25 @@ make problemgenerator
 rm -rf energy_*.txt
 
 
-for t in $(seq 0 5)
+for t in $(seq 3 3)
 do
 	echo "###################################"
 	echo "Running test case $t"
-	runtime="10"
-	if [ "$t" -eq "8" ]; then
-		runtime="1000"
-	fi
 
 
 	./problemgenerator --testcase=$t
 
 	make -s ias15
 	#runepsilonnbody ias15 -11 -5 $runtime
-        runnbodycanonical ias15 0 $runtime
+        runnbodycanonical ias15 0 
 	#runnbodycanonical ias15 1 $runtime
      
 	#make -s ra15
 	#runepsilonnbody ra15 -14 -6 $runtime
 
 	make -s wh
-	rundtnbody wh 0 4 $runtime
+	mindt=$(echo "scale=16; l(e($t*l(10))/10000.)/l(10) " |bc -l)
+	rundtnbody wh $mindt 4 
 
 	pushd mercury
 	rm -f *.tmp
@@ -153,7 +145,7 @@ do
 	#runepsilon bs2 $runtime
 	#runepsilon radau $runtime
 	#runepsilon hybrid 
-	rundt mvs $runtime
+	rundt mvs $mindt 4
 	popd
 
 	rm -rf testcase_$t
