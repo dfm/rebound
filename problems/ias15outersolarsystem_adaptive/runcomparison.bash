@@ -144,11 +144,11 @@ make problemgenerator
 rm -rf energy_*.txt
 
 
-for t in $(seq 0 7)
+for t in $(seq 0 0)
 do
 	echo "###################################"
 	echo "Running test case $t"
-	runtime="10"
+	runtime="40"
 	if [ "$t" -eq "8" ]; then
 		runtime="1000"
 	fi
@@ -173,9 +173,9 @@ do
 	rm -f *.out
 	rm -f output.txt
 	runepsilon bs $runtime  
-	runepsilon bs2 $runtime
-	runepsilon radau $runtime
-	runepsilon hybrid 
+#	runepsilon bs2 $runtime
+#	runepsilon radau $runtime
+#	runepsilon hybrid 
 	rundt mvs $runtime
 	popd
 

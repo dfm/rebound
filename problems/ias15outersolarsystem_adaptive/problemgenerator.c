@@ -31,16 +31,17 @@ int main(int argc, char* argv[]){
 			star.vx = 0; star.vy = 0; star.vz = 0;
 			particles[N++] = star;
 
+			double inc_perturber = 88; // 80.
 			
 			// The planet 
 			struct particle planet; 
-			planet.m  = 0.01*star.m;
+			planet.m  = 0.0;
 			planet.x  = semia; 
 			planet.y  = 0; 
 			planet.z  = 0; 
 			planet.vx = 0; 
-			planet.vy = sqrt(G*star.m/semia); 
-			planet.vz = 0;
+			planet.vy = cos(inc_perturber/180.*M_PI)*sqrt(G*star.m/semia); 
+			planet.vz = sin(inc_perturber/180.*M_PI)*sqrt(G*star.m/semia);
 			particles[N++] = planet;
 			
 			// The perturber
@@ -49,12 +50,11 @@ int main(int argc, char* argv[]){
 			perturber.x  = semia*10.; 
 			perturber.y  = 0; 
 			perturber.z  = 0; 
-			double inc_perturber = 88; // 80.
 			perturber.vx = 0; 
-			perturber.vy = cos(inc_perturber/180.*M_PI)*sqrt(G*(star.m+perturber.m)/perturber.x); 
-			perturber.vz = sin(inc_perturber/180.*M_PI)*sqrt(G*(star.m+perturber.m)/perturber.x); 
+			perturber.vy = sqrt(G*(star.m+perturber.m)/perturber.x); 
+			perturber.vz = 0; 
 			particles[N++] = perturber;
-			tmax	= 1e4*365.*sqrt(semia*semia*semia/star.m);
+			tmax	= 6e6;
 			break;
 		}
 		case 1: // Kozai  80

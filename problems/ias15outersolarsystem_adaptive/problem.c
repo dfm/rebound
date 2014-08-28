@@ -48,6 +48,8 @@ double energy();
 double* angular_momentum();
 double energy_init;
 double* aminit;
+double jacobi();
+double jacobi_init;
 void input_binary_special(char* filename);
 int init_N;
 double timescale = 1;
@@ -79,6 +81,7 @@ void problem_init(int argc, char* argv[]){
 	mpf_set_default_prec(512);
 	energy_init = energy();
 	aminit = angular_momentum();
+	jacobi_init = jacobi();
 }
 
 void problem_inloop(){
@@ -141,7 +144,40 @@ double energy(){
 
 	return mpf_get_d(energy_kinetic);
 }
+
+double max_e = 0;
+double get_e(){
+	struct orbit o;
+	double h0,h1,h2,e0,e1,e2,vr,mu;
+	struct particle p = particles[1];
+	mu = G*(p.m+particles[0].m);
+	p.x -= particles[0].x;
+	p.y -= particles[0].y;
+	p.z -= particles[0].z;
+	p.vx -= particles[0].vx;
+	p.vy -= particles[0].vy;
+	p.vz -= particles[0].vz;
+	h0 = (p.y*p.vz - p.z*p.vy); 			//angular momentum vector
+	h1 = (p.z*p.vx - p.x*p.vz);
+	h2 = (p.x*p.vy - p.y*p.vx);
+	o.h = sqrt ( h0*h0 + h1*h1 + h2*h2 );		// abs value of angular moment 
+	double v = sqrt ( p.vx*p.vx + p.vy*p.vy + p.vz*p.vz );
+	o.r = sqrt ( p.x*p.x + p.y*p.y + p.z*p.z );
+	vr = (p.x*p.vx + p.y*p.vy + p.z*p.vz)/o.r;
+	e0 = 1./mu*( (v*v-mu/o.r)*p.x - o.r*vr*p.vx );
+	e1 = 1./mu*( (v*v-mu/o.r)*p.y - o.r*vr*p.vy );
+	e2 = 1./mu*( (v*v-mu/o.r)*p.z - o.r*vr*p.vz );
+ 	return sqrt( e0*e0 + e1*e1 + e2*e2 );		// eccentricity
+}
+
 void problem_output(){
+	double e = get_e();
+	if (e>max_e){
+		max_e = e;
+	}
+//	if (output_check(10)){
+//		output_append_orbits("orbits.txt");
+//	}
 	if (outputenergy){
 		if(output_check(tmax/10000.)){
 			FILE* of = fopen("energy_timeseries.txt","a+"); 
@@ -159,7 +195,9 @@ void problem_finish(){
 	if (init_N!=N){
 		rel_energy = -1;
 	}
-	fprintf(of,"%e\t%.20e\t%.20e\t%.20e\t%.20e\t%.20e\t%.20e\t",rel_energy,am[0],am[1],am[2],aminit[0],aminit[1],aminit[2]);
+	double jacobi_final = jacobi();
+	double rel_jacobi = fabs((jacobi_final-jacobi_init)/jacobi_init);
+	fprintf(of,"%e\t%.20e\t%.20e\t%.20e\t%.20e\t%.20e\t%.20e\t%.20e\t%.20e\t",rel_energy,am[0],am[1],am[2],aminit[0],aminit[1],aminit[2], rel_jacobi,max_e);
 	fclose(of);
 }
 
@@ -257,4 +295,59 @@ double* angular_momentum(){
 	am[2] = mpf_get_d(amz);
 
 	return am;
+}
+double jacobi(){
+	tools_move_to_center_of_momentum();
+
+	double dx = particles[2].x - particles[0].x;
+	double dy = particles[2].y - particles[0].y;
+	double dz = particles[2].z - particles[0].z;
+	double r = sqrt(dx*dx + dy*dy + dz*dz );
+	
+	double dvx = particles[2].vx - particles[0].vx;
+	double dvy = particles[2].vy - particles[0].vy;
+	double dvz = particles[2].vz - particles[0].vz;
+	double v = sqrt(dvx*dvx + dvy*dvy + dvz*dvz );
+
+	double mu = G*(particles[2].m+particles[0].m);
+	double a = 1./(2./r-v*v/mu);
+	double n = sqrt(mu/(a*a*a));
+
+	{
+		int i=1;
+		double jac = 0;
+		double r1,r2;
+		{
+			double dx = particles[i].x - particles[0].x;
+			double dy = particles[i].y - particles[0].y;
+			double dz = particles[i].z - particles[0].z;
+			r1 = sqrt(dx*dx + dy*dy + dz*dz );
+		}
+		{
+			double dx = particles[i].x - particles[2].x;
+			double dy = particles[i].y - particles[2].y;
+			double dz = particles[i].z - particles[2].z;
+			r2 = sqrt(dx*dx + dy*dy + dz*dz );
+		}
+		jac += 2.*G*particles[0].m/r1;
+		jac += 2.*G*particles[2].m/r2;
+		jac += 2.*n*(particles[i].x*particles[i].vy-particles[i].y*particles[i].vx);
+		jac -= particles[i].vx * particles[i].vx;
+		jac -= particles[i].vy * particles[i].vy;
+		jac -= particles[i].vz * particles[i].vz;
+		
+#ifdef INTEGRATOR_WH
+		for(int i=N-1;i>=0;i--){
+			particles[i].vx -= particles[0].vx;
+			particles[i].vy -= particles[0].vy;
+			particles[i].vz -= particles[0].vz;
+			particles[i].x -= particles[0].x;
+			particles[i].y -= particles[0].y;
+			particles[i].z -= particles[0].z;
+		}
+#endif // INTEGRATOR_WH
+		
+		
+		return jac;
+	}	
 }

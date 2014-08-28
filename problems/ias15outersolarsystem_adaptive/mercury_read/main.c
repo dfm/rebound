@@ -11,6 +11,8 @@ const double k	 	= 0.01720209895;	// Gaussian constant
 double energy();
 double* angular_momentum();
 double energy_init;
+double jacobi();
+double jacobi_init;
 double G;
 long N=7;
 struct particle* particles;
@@ -67,6 +69,7 @@ int main (int argc, char* argv[]){
 	energy_init = energy();
 	double* aminit;
 	aminit = angular_momentum();
+	jacobi_init = jacobi();
 	readin(argv[2]);
 	int N_2 = N;
 	if (N_1!=N_2){
@@ -78,7 +81,8 @@ int main (int argc, char* argv[]){
 	double rel_energy = fabs((energy()-energy_init)/energy_init);
 	double* am;
 	am = angular_momentum();
-	printf("%e\t%.20e\t%.20e\t%.20e\t%.20e\t%.20e\t%.20e\n",rel_energy,am[0],am[1],am[2],aminit[0],aminit[1],aminit[2]);
+	double rel_jacobi = fabs((jacobi_init-jacobi())/jacobi_init);
+	printf("%e\t%.20e\t%.20e\t%.20e\t%.20e\t%.20e\t%.20e\t%.20e\n",rel_energy,am[0],am[1],am[2],aminit[0],aminit[1],aminit[2],rel_jacobi);
 }
 
 double energy(){
@@ -219,4 +223,89 @@ double* angular_momentum(){
 	am[2] = mpf_get_d(amz);
 
 	return am;
+}
+double jacobi(){
+	double m = 0;
+	double x = 0;
+	double y = 0;
+	double z = 0;
+	double vx = 0;
+	double vy = 0;
+	double vz = 0;
+	for (int i=0;i<N;i++){
+		struct particle p = particles[i];
+		m  += p.m;
+		x  += p.x*p.m;
+		y  += p.y*p.m;
+		z  += p.z*p.m;
+		vx += p.vx*p.m;
+		vy += p.vy*p.m;
+		vz += p.vz*p.m;
+	}
+	x /= m;
+	y /= m;
+	z /= m;
+	vx /= m;
+	vy /= m;
+	vz /= m;
+	for (int i=0;i<N;i++){
+		particles[i].x  -= x;
+		particles[i].y  -= y;
+		particles[i].z  -= z;
+		particles[i].vx -= vx;
+		particles[i].vy -= vy;
+		particles[i].vz -= vz;
+	}
+
+	double dx = particles[2].x - particles[0].x;
+	double dy = particles[2].y - particles[0].y;
+	double dz = particles[2].z - particles[0].z;
+	double r = sqrt(dx*dx + dy*dy + dz*dz );
+	
+	double dvx = particles[2].vx - particles[0].vx;
+	double dvy = particles[2].vy - particles[0].vy;
+	double dvz = particles[2].vz - particles[0].vz;
+	double v = sqrt(dvx*dvx + dvy*dvy + dvz*dvz );
+
+	double mu = G*(particles[2].m+particles[0].m);
+	double a = 1./(2./r-v*v/mu);
+	double n = sqrt(mu/(a*a*a));
+
+	{
+		int i=1;
+		double jac = 0;
+		double r1,r2;
+		{
+			double dx = particles[i].x - particles[0].x;
+			double dy = particles[i].y - particles[0].y;
+			double dz = particles[i].z - particles[0].z;
+			r1 = sqrt(dx*dx + dy*dy + dz*dz );
+		}
+		{
+			double dx = particles[i].x - particles[2].x;
+			double dy = particles[i].y - particles[2].y;
+			double dz = particles[i].z - particles[2].z;
+			r2 = sqrt(dx*dx + dy*dy + dz*dz );
+		}
+		jac += 2.*G*particles[0].m/r1;
+		jac += 2.*G*particles[2].m/r2;
+		jac += 2.*n*(particles[i].x*particles[i].vy-particles[i].y*particles[i].vx);
+		jac -= particles[i].vx * particles[i].vx;
+		jac -= particles[i].vy * particles[i].vy;
+		jac -= particles[i].vz * particles[i].vz;
+		
+#ifdef INTEGRATOR_WH
+		for(int i=0;i<N;i++){
+			particles[i].vx -= particles[0].vx;
+			particles[i].vy -= particles[0].vy;
+			particles[i].vz -= particles[0].vz;
+			particles[i].x -= particles[0].x;
+			particles[i].y -= particles[0].y;
+			particles[i].z -= particles[0].z;
+		}
+#endif // INTEGRATOR_WH
+		
+		
+		return jac;
+	}	
 }
