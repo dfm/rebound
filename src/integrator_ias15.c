@@ -67,7 +67,6 @@ double 	integrator_epsilon 			= 1e-9;	// Precision parameter
 int	integrator_epsilon_global		= 1;	// if 1: estimate the fractional error by max(acceleration_error)/max(acceleration), where max is take over all particles.
 							// if 0: estimate the fractional error by max(acceleration_error/acceleration).
 double 	integrator_min_dt 			= 0;	// Minimum timestep used as a floor when adaptive timestepping is enabled.
-double	integrator_error			= 0;	// Error estimate in last timestep (used for debugging only)
 unsigned int integrator_iterations_max		= 12;	// Maximum number of iterations in predictor/corrector loop
 unsigned long integrator_iterations_max_exceeded= 0;	// Count how many times the iteration did not converge
 const double safety_factor 			= 0.25;	// Maximum increase/deacrease of consecutve timesteps.
@@ -378,7 +377,7 @@ int integrator_ias15_step() {
 		// integrator_epsilon_global==0
 		//   Here, the fractional error is calculated for each particle individually and we use the maximum of the fractional error.
 		//   This might fail in cases where a particle does not experience any (physical) acceleration besides roundoff errors. 
-		integrator_error = 0.0;
+		double integrator_error = 0.0;
 		if (integrator_epsilon_global){
 			double maxak = 0.0;
 			double maxb6k = 0.0;
