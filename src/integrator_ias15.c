@@ -67,7 +67,6 @@ double 	integrator_epsilon 			= 1e-9;	// Precision parameter
 int	integrator_epsilon_global		= 1;	// if 1: estimate the fractional error by max(acceleration_error)/max(acceleration), where max is take over all particles.
 							// if 0: estimate the fractional error by max(acceleration_error/acceleration).
 double 	integrator_min_dt 			= 0;	// Minimum timestep used as a floor when adaptive timestepping is enabled.
-unsigned int integrator_iterations_max		= 12;	// Maximum number of iterations in predictor/corrector loop
 unsigned long integrator_iterations_max_exceeded= 0;	// Count how many times the iteration did not converge
 const double safety_factor 			= 0.25;	// Maximum increase/deacrease of consecutve timesteps.
 
@@ -185,11 +184,18 @@ int integrator_ias15_step() {
 	double predictor_corrector_error_last = 2;
 	int iterations = 0;	
 	// Predictor corrector loop
-	// Stops if accuracy better than 1e-16 or if accuracy starts to oscillate
-	while(predictor_corrector_error>1e-16 && (iterations <= 2 || predictor_corrector_error_last > predictor_corrector_error)){	
-						
-		predictor_corrector_error_last = predictor_corrector_error;
-		if (iterations>=integrator_iterations_max){
+	// Stops if 
+	//   1) accuracy better than 1e-16 
+	//   2) accuracy starts to oscillate
+	//   3) more than 12 iterations
+	while(1){
+		if(predictor_corrector_error<1e-16){
+			break;
+		}
+		if(iterations > 2 && predictor_corrector_error_last < predictor_corrector_error){
+			break;
+		}
+		if (iterations>=12){
 			integrator_iterations_max_exceeded++;
 			const int integrator_iterations_warning = 10;
 			if (integrator_iterations_max_exceeded==integrator_iterations_warning ){
@@ -197,6 +203,7 @@ int integrator_ias15_step() {
 			}
 			break;								// Quit predictor corrector loop
 		}
+		predictor_corrector_error_last = predictor_corrector_error;
 		predictor_corrector_error = 0;
 		iterations++;
 
