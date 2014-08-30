@@ -19,10 +19,10 @@ set ylabel "relative energy error"
 set format y "10^{%T}"
 set format x "10^{%T}"
 plot \
-"<awk '{if (NR%5==0) print $0}' mercury_bs_*/energy.txt"  u ($2/4332.0):(abs($5)) lc rgb "purple" pt 7 notit, 1/0 w p  lc rgb "dark-gray" ps 1  pt 7 notit , 1/0 w p lc rgb "purple" pt 7 ps 1.5 t "Mercury BS", \
-"<awk '{if (NR%2==0) print $0}' mercury_{0.1,1,10,100}/energy.txt"  u ($2/4332.0):(abs($5)) lc rgb "blue" pt 7 notit, 1/0 w p lc rgb "blue" pt 7 ps 1.5 t "   Mercury MVS", \
+"<awk '{if (NR%5==0) print $0}' mercury_bs_*/energy.txt"  u ($2/4332.0):(abs($5)) lc rgb "purple" pt 7 notit, 1/0 w p  lc rgb "dark-gray" ps 1  pt 7 notit , 1/0 w p lc rgb "purple" pt 7 ps 1.5 t "BS (MERCURY)", \
+"<awk '{if (NR%2==0) print $0}' mercury_{0.1,1,10,100}/energy.txt"  u ($2/4332.0):(abs($5)) lc rgb "dark-red" pt 7 notit, 1/0 w p lc rgb "dark-red" pt 7 ps 1.5 t "   MVS (MERCURY)", \
 "<awk '{if (NR%5==0) print $0}'  ias15_cs_rms/energy_orbits_1.000*" w p ps 0.5 lc rgb "light-green" pt 7 notit , 1/0 w p t "IAS15" lc rgb "light-green" pt 7 ps 1.5, \
-"< sort -k 1 -g ias15_cs_rms/energy_orbits_1.000* | awk -f rms.awk" w p lc rgb "dark-green" pt 7 notit , 1/0 w p t "IAS15 (RMS)" lc rgb "dark-green" pt 7 ps 1.5, \
+"< sort -k 1 -g ias15_cs_rms/energy_orbits_1.000* | awk -f rms.awk" w p lc rgb "dark-green" pt 7 notit , 1/0 w p t "IAS15 RMS" lc rgb "dark-green" pt 7 ps 1.5, \
 0.6e-16*sqrt(x) ls 0 lw 5 t "t^{0.5}", \
 
 
