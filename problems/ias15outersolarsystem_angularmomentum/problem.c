@@ -40,6 +40,36 @@
 #include "particle.h"
 #include "boundaries.h"
 
+double ss_pos[6][3] = 
+{
+	{-4.06428567034226e-3,	-6.08813756435987e-3,	-1.66162304225834e-6	}, // Sun
+	{+3.40546614227466e+0,	+3.62978190075864e+0,	+3.42386261766577e-2	}, // Jupiter
+	{+6.60801554403466e+0,	+6.38084674585064e+0,	-1.36145963724542e-1	}, // Saturn
+	{+1.11636331405597e+1,	+1.60373479057256e+1,	+3.61783279369958e-1	}, // Uranus
+	{-3.01777243405203e+1,	+1.91155314998064e+0,	-1.53887595621042e-1	}, // Neptune
+	{-2.13858977531573e+1,	+3.20719104739886e+1,	+2.49245689556096e+0	}  // Pluto
+};
+double ss_vel[6][3] = 
+{
+	{+6.69048890636161e-6,	-6.33922479583593e-6,	-3.13202145590767e-9	}, // Sun
+	{-5.59797969310664e-3,	+5.51815399480116e-3,	-2.66711392865591e-6	}, // Jupiter
+	{-4.17354020307064e-3,	+3.99723751748116e-3,	+1.67206320571441e-5	}, // Saturn
+	{-3.25884806151064e-3,	+2.06438412905916e-3,	-2.17699042180559e-5	}, // Uranus
+	{-2.17471785045538e-4,	-3.11361111025884e-3,	+3.58344705491441e-5	}, // Neptune
+	{-1.76936577252484e-3,	-2.06720938381724e-3,	+6.58091931493844e-4	}  // Pluto
+};
+
+double ss_mass[6] =
+{
+	1.00000597682, 	// Sun + inner planets
+	1./1047.355,	// Jupiter
+	1./3501.6,	// Saturn
+	1./22869.,	// Uranus
+	1./19314.,	// Neptune
+	0.		// Pluto
+};
+
+const double k	 	= 0.01720209895;	// Gaussian constant 
 #ifdef OPENGL
 extern int display_wire;
 #endif // OPENGL
@@ -48,40 +78,46 @@ double energy();
 double energy_init;
 double* angular_momentum();
 double* aminit;
-double jacobi();
-double jacobi_init;
-void input_binary_special(char* filename);
-int init_N;
-double timescale = 1;
-int outputenergy;
 
 void problem_init(int argc, char* argv[]){
 	// Setup constants
-	dt 		= input_get_double(argc,argv,"dt",1.);			// days
-	outputenergy	= input_get_int(argc,argv,"outputenergy",0);
-	const double k 	= 0.01720209895;	// Gaussian constant 
+	dt 		= input_get_double(argc,argv,"dt",40);			// days
+	N_active	= 5;
+	tmax		= 4300e2;		// 1 Myr
 	G		= k*k;
+#ifdef INTEGRATOR_IAS15
+	integrator_epsilon = input_get_double(argc,argv,"integrator_epsilon",0);
+#endif // INTEGRATOR_IAS15
 
-	integrator_epsilon = input_get_double(argc,argv,"integrator_epsilon",integrator_epsilon);
-	integrator_force_is_velocitydependent = 0;
-	
 #ifdef OPENGL
 	display_wire	= 1;			// Show orbits.
 #endif // OPENGL
-	init_boxwidth(150); 			// Init box with width 200 astronomical units
+	init_boxwidth(200); 			// Init box with width 200 astronomical units
 
-	input_binary_special("particles.bin");
-	dt *= timescale;
-	init_N = N;
-
-#ifndef INTEGRATOR_WH
+	// Initial conditions
+	for (int i=0;i<6;i++){
+		struct particle p;
+		p.x  = ss_pos[i][0]; 		p.y  = ss_pos[i][1];	 	p.z  = ss_pos[i][2];
+		p.vx = ss_vel[i][0]; 		p.vy = ss_vel[i][1];	 	p.vz = ss_vel[i][2];
+		p.ax = 0; 			p.ay = 0; 			p.az = 0;
+		p.m  = ss_mass[i];
+		particles_add(p); 
+	}
+#ifdef INTEGRATOR_WH
+	// Move to heliocentric frame (required by WHM)
+	for (int i=1;i<N;i++){
+		particles[i].x -= particles[0].x;	particles[i].y -= particles[0].y;	particles[i].z -= particles[0].z;
+		particles[i].vx -= particles[0].vx;	particles[i].vy -= particles[0].vy;	particles[i].vz -= particles[0].vz;
+	}
+	particles[0].x = 0;	particles[0].y = 0;	particles[0].z = 0;
+	particles[0].vx= 0;	particles[0].vy= 0;	particles[0].vz= 0;
+#else
 	// Move to barycentric frame
 	tools_move_to_center_of_momentum();
 #endif // INTEGRATOR_WH
+	aminit = angular_momentum();
 	mpf_set_default_prec(512);
 	energy_init = energy();
-	aminit = angular_momentum();
-	jacobi_init = jacobi();
 }
 
 void problem_inloop(){
@@ -145,77 +181,19 @@ double energy(){
 	return mpf_get_d(energy_kinetic);
 }
 
-double max_e = 0;
-double get_e(){
-	struct orbit o;
-	double h0,h1,h2,e0,e1,e2,vr,mu;
-	struct particle p = particles[1];
-	mu = G*(p.m+particles[0].m);
-	p.x -= particles[0].x;
-	p.y -= particles[0].y;
-	p.z -= particles[0].z;
-	p.vx -= particles[0].vx;
-	p.vy -= particles[0].vy;
-	p.vz -= particles[0].vz;
-	h0 = (p.y*p.vz - p.z*p.vy); 			//angular momentum vector
-	h1 = (p.z*p.vx - p.x*p.vz);
-	h2 = (p.x*p.vy - p.y*p.vx);
-	o.h = sqrt ( h0*h0 + h1*h1 + h2*h2 );		// abs value of angular moment 
-	double v = sqrt ( p.vx*p.vx + p.vy*p.vy + p.vz*p.vz );
-	o.r = sqrt ( p.x*p.x + p.y*p.y + p.z*p.z );
-	vr = (p.x*p.vx + p.y*p.vy + p.z*p.vz)/o.r;
-	e0 = 1./mu*( (v*v-mu/o.r)*p.x - o.r*vr*p.vx );
-	e1 = 1./mu*( (v*v-mu/o.r)*p.y - o.r*vr*p.vy );
-	e2 = 1./mu*( (v*v-mu/o.r)*p.z - o.r*vr*p.vz );
- 	return sqrt( e0*e0 + e1*e1 + e2*e2 );		// eccentricity
-}
-
 void problem_output(){
-	double e = get_e();
-	if (e>max_e){
-		max_e = e;
-	}
-//	if (output_check(10)){
-//		output_append_orbits("orbits.txt");
-//	}
-	if (outputenergy){
-		if(output_check(tmax/10000.)){
-			FILE* of = fopen("energy_timeseries.txt","a+"); 
-			double rel_energy = fabs((energy()-energy_init)/energy_init);
-			fprintf(of,"%e\t%e\n",t,rel_energy);
-			fclose(of);
-		}
-	}
 }
 
 void problem_finish(){
-	FILE* of = fopen("energy.txt","w"); 
+	FILE* of = fopen("energy.txt","a+"); 
 	double rel_energy = fabs((energy()-energy_init)/energy_init);
-	double* am = angular_momentum();
-	if (init_N!=N){
-		rel_energy = -1;
-	}
-	double jacobi_final = jacobi();
-	double rel_jacobi = fabs((jacobi_final-jacobi_init)/jacobi_init);
-	fprintf(of,"%e\t%.20e\t%.20e\t%.20e\t%.20e\t%.20e\t%.20e\t%.20e\t%.20e\t",rel_energy,am[0],am[1],am[2],aminit[0],aminit[1],aminit[2], rel_jacobi,max_e);
+	double* amfini = angular_momentum();
+	double _ai = sqrt(aminit[0]*aminit[0] + aminit[1]*aminit[1] + aminit[2]*aminit[2] );
+	double _af = sqrt(amfini[0]*amfini[0] + amfini[1]*amfini[1] + amfini[2]*amfini[2] );
+	fprintf(of,"%e\t%e\t%e\n",dt,rel_energy,fabs((_ai-_af)/_ai));
 	fclose(of);
-}
 
-void input_binary_special(char* filename){
-	FILE* inf = fopen(filename,"rb"); 
-	long objects = 0;
-	int _N;
-	objects += fread(&_N,sizeof(int),1,inf);
-	objects += fread(&tmax,sizeof(double),1,inf);
-	objects += fread(&timescale,sizeof(double),1,inf);
-	for (int i=0;i<_N;i++){
-		struct particle p;
-		objects += fread(&p,sizeof(struct particle),1,inf);
-		particles_add(p);
-	}
-	fclose(inf);
 }
-
 double* angular_momentum(){
 	mpf_t amx;
 	mpf_init(amx);
@@ -295,59 +273,4 @@ double* angular_momentum(){
 	am[2] = mpf_get_d(amz);
 
 	return am;
-}
-double jacobi(){
-	tools_move_to_center_of_momentum();
-
-	double dx = particles[2].x - particles[0].x;
-	double dy = particles[2].y - particles[0].y;
-	double dz = particles[2].z - particles[0].z;
-	double r = sqrt(dx*dx + dy*dy + dz*dz );
-	
-	double dvx = particles[2].vx - particles[0].vx;
-	double dvy = particles[2].vy - particles[0].vy;
-	double dvz = particles[2].vz - particles[0].vz;
-	double v = sqrt(dvx*dvx + dvy*dvy + dvz*dvz );
-
-	double mu = G*(particles[2].m+particles[0].m);
-	double a = 1./(2./r-v*v/mu);
-	double n = sqrt(mu/(a*a*a));
-
-	{
-		int i=1;
-		double jac = 0;
-		double r1,r2;
-		{
-			double dx = particles[i].x - particles[0].x;
-			double dy = particles[i].y - particles[0].y;
-			double dz = particles[i].z - particles[0].z;
-			r1 = sqrt(dx*dx + dy*dy + dz*dz );
-		}
-		{
-			double dx = particles[i].x - particles[2].x;
-			double dy = particles[i].y - particles[2].y;
-			double dz = particles[i].z - particles[2].z;
-			r2 = sqrt(dx*dx + dy*dy + dz*dz );
-		}
-		jac += 2.*G*particles[0].m/r1;
-		jac += 2.*G*particles[2].m/r2;
-		jac += 2.*n*(particles[i].x*particles[i].vy-particles[i].y*particles[i].vx);
-		jac -= particles[i].vx * particles[i].vx;
-		jac -= particles[i].vy * particles[i].vy;
-		jac -= particles[i].vz * particles[i].vz;
-		
-#ifdef INTEGRATOR_WH
-		for(int i=N-1;i>=0;i--){
-			particles[i].vx -= particles[0].vx;
-			particles[i].vy -= particles[0].vy;
-			particles[i].vz -= particles[0].vz;
-			particles[i].x -= particles[0].x;
-			particles[i].y -= particles[0].y;
-			particles[i].z -= particles[0].z;
-		}
-#endif // INTEGRATOR_WH
-		
-		
-		return jac;
-	}	
 }
