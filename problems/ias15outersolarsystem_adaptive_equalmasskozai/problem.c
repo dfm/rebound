@@ -170,9 +170,9 @@ double get_e(){
 }
 
 void problem_output(){
-	if (output_check(10)){
-		output_append_orbits("orbits.txt");
-	}
+//	if (output_check(10)){
+///		output_append_orbits("orbits.txt");
+//	}
 	if (outputenergy){
 		if(output_check(tmax/10000.)){
 			FILE* of = fopen("energy_timeseries.txt","a+"); 
