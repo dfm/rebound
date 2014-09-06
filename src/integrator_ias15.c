@@ -117,13 +117,18 @@ void integrator_update_acceleration(){
 }
 
 int integrator_ias15_step(); // Does the actual timestep.
-
+long ias15_steps = 0;
 void integrator_part2(){
 #ifdef GENERATE_CONSTANTS
 	integrator_generate_constants();
 #endif  // GENERATE_CONSTANTS
 	// Try until a step was successful.
 	while(!integrator_ias15_step());
+	ias15_steps++;
+}
+
+void int_break(){
+	printf("small dt");
 }
  
 int integrator_ias15_step() {
@@ -183,6 +188,7 @@ int integrator_ias15_step() {
 	double predictor_corrector_error = 1e300;
 	double predictor_corrector_error_last = 2;
 	int iterations = 0;	
+	int gk_flag = 1;	// Flags if relative change in acceleration is very small during timestep. Prevents reduction of timestep.
 	// Predictor corrector loop
 	// Stops if 
 	//   1) accuracy better than 1e-16 
@@ -192,7 +198,7 @@ int integrator_ias15_step() {
 		if(predictor_corrector_error<1e-16){
 			break;
 		}
-		if(iterations > 2 && predictor_corrector_error_last < predictor_corrector_error){
+		if(iterations > 2 && predictor_corrector_error_last <= predictor_corrector_error){
 			break;
 		}
 		if (iterations>=12){
@@ -265,17 +271,18 @@ int integrator_ias15_step() {
 				at[3*k+1] = particles[k].ay;  
 				at[3*k+2] = particles[k].az;
 			}
+		
 			switch (n) {							// Improve b and g values
 				case 1: 
 					for(int k=0;k<N3;++k) {
 						double tmp = g[0][k];
-						g[0][k]  = (at[k] - a0[k]) / r[0];
+						g[0][k]  = ((at[k] - a0[k])) / r[0];
 						b[0][k] += g[0][k] - tmp;
 					} break;
 				case 2: 
 					for(int k=0;k<N3;++k) {
 						double tmp = g[1][k];
-						double gk = at[k] - a0[k];
+						double gk = (at[k] - a0[k]);
 						g[1][k] = (gk/r[1] - g[0][k])/r[2];
 						tmp = g[1][k] - tmp;
 						b[0][k] += tmp * c[0];
@@ -284,7 +291,7 @@ int integrator_ias15_step() {
 				case 3: 
 					for(int k=0;k<N3;++k) {
 						double tmp = g[2][k];
-						double gk = at[k] - a0[k];
+						double gk = (at[k] - a0[k]);
 						g[2][k] = ((gk/r[3] - g[0][k])/r[4] - g[1][k])/r[5];
 						tmp = g[2][k] - tmp;
 						b[0][k] += tmp * c[1];
@@ -294,7 +301,7 @@ int integrator_ias15_step() {
 				case 4:
 					for(int k=0;k<N3;++k) {
 						double tmp = g[3][k];
-						double gk = at[k] - a0[k];
+						double gk = (at[k] - a0[k]);
 						g[3][k] = (((gk/r[6] - g[0][k])/r[7] - g[1][k])/r[8] - g[2][k])/r[9];
 						tmp = g[3][k] - tmp;
 						b[0][k] += tmp * c[3];
@@ -305,7 +312,7 @@ int integrator_ias15_step() {
 				case 5:
 					for(int k=0;k<N3;++k) {
 						double tmp = g[4][k];
-						double gk = at[k] - a0[k];
+						double gk = (at[k] - a0[k]);
 						g[4][k] = ((((gk/r[10] - g[0][k])/r[11] - g[1][k])/r[12] - g[2][k])/r[13] - g[3][k])/r[14];
 						tmp = g[4][k] - tmp;
 						b[0][k] += tmp * c[6];
@@ -317,7 +324,7 @@ int integrator_ias15_step() {
 				case 6:
 					for(int k=0;k<N3;++k) {
 						double tmp = g[5][k];
-						double gk = at[k] - a0[k];
+						double gk = (at[k] - a0[k]);
 						g[5][k] = (((((gk/r[15] - g[0][k])/r[16] - g[1][k])/r[17] - g[2][k])/r[18] - g[3][k])/r[19] - g[4][k])/r[20];
 						tmp = g[5][k] - tmp;
 						b[0][k] += tmp * c[10];
@@ -333,7 +340,7 @@ int integrator_ias15_step() {
 					double maxb6ktmp = 0.0;
 					for(int k=0;k<N3;++k) {
 						double tmp = g[6][k];
-						double gk = at[k] - a0[k];
+						double gk = (at[k] - a0[k]);
 						g[6][k] = ((((((gk/r[21] - g[0][k])/r[22] - g[1][k])/r[23] - g[2][k])/r[24] - g[3][k])/r[25] - g[4][k])/r[26] - g[5][k])/r[27];
 						tmp = g[6][k] - tmp;	
 						b[0][k] += tmp * c[15];
@@ -345,6 +352,8 @@ int integrator_ias15_step() {
 						b[6][k] += tmp;
 						
 						// Monitor change in b[6][k] relative to at[k]. The predictor corrector scheme is converged if it is close to 0.
+						
+						// Skip slowly varying accelerations
 						if (integrator_epsilon_global){
 							const double ak  = fabs(at[k]);
 							if (isnormal(ak) && ak>maxak){
@@ -366,9 +375,43 @@ int integrator_ias15_step() {
 					if (integrator_epsilon_global){
 						predictor_corrector_error = maxb6ktmp/maxak;
 					}
+
 					
 					break;
 				}
+			}
+			if (n==7){
+				for (int k = 0;k<N3;k++){
+					const double gk = fabs((at[k] - a0[k])/a0[k]);
+					if (gk>1e-3){
+						gk_flag = 0;
+					}
+				}
+			}
+			if (n==7 && ias15_steps%11==0){
+				//FILE* f = fopen("tmp.txt","a+");
+				//if (n==1){
+				//	for (int k = 0;k<N3;k++){
+				//	fprintf(f,"%e %e %d %d %.20e %.20e\n",h[0],dt,k/3,0,a0[k],x0[k]);
+				//	}
+				//}
+				//for (int k = 0;k<N3;k++){
+				//	double pos;
+				//	switch (k%3){
+				//		case 0:
+				//			pos = particles[k/3].x;
+				//			break;
+				//		case 1:
+				//			pos = particles[k/3].y;
+				//			break;
+				//		case 2:
+				//			pos = particles[k/3].z;
+				//			break;
+				//	}
+
+				//	fprintf(f,"%e %e %e %d %d %.20e %.20e\n",t, h[n],dt,k/3,n,at[k],pos);
+				//}
+				//fclose(f);
 			}
 		}
 	}
@@ -388,14 +431,24 @@ int integrator_ias15_step() {
 		if (integrator_epsilon_global){
 			double maxak = 0.0;
 			double maxb6k = 0.0;
-			for(int k=0;k<N3;k++) {  // Looping over all particles and all 3 components of the acceleration. 
-				const double ak  = fabs(at[k]);
-				if (isnormal(ak) && ak>maxak){
-					maxak = ak;
-				}
-				const double b6k = fabs(b[6][k]); 
-				if (isnormal(b6k) && b6k>maxb6k){
-					maxb6k = b6k;
+			int maxk1 = -1;
+			int maxk2 = -1;
+			for(int i=0;i<N;i++){ // Looping over all particles and all 3 components of the acceleration. 
+				double v2 = particles[i].vx*particles[i].vx+particles[i].vy*particles[i].vy+particles[i].vz*particles[i].vz;
+				double x2 = particles[i].x*particles[i].x+particles[i].y*particles[i].y+particles[i].z*particles[i].z;
+				if (fabs(v2*dt*dt/x2) < 1e-16) continue;
+				for(int k=3*i;k<3*(i+1);k++) { 
+					// Skip slowly varying accelerations
+					const double ak  = fabs(at[k]);
+					if (isnormal(ak) && ak>maxak){
+						maxak = ak;
+						maxk1 = k;
+					}
+					const double b6k = fabs(b[6][k]); 
+					if (isnormal(b6k) && b6k>maxb6k){
+						maxb6k = b6k;
+						maxk2 = k;
+					}
 				}
 			}
 			integrator_error = maxb6k/maxak;
