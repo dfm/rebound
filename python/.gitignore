@@ -1,0 +1,4 @@
+build
+*.pyc
+*.so
+rebound/_rebound.[ch]
