@@ -38,6 +38,7 @@ struct particle* 	particles;
 int N 		= 0;	
 int Nmax	= 0;	
 int N_active 	= -1; 	
+int N_megno 	= 0; 	
 
 #ifdef BOUNDARIES_OPEN
 int boundaries_particle_is_in_box(struct particle p);
@@ -70,6 +71,9 @@ void particles_add_local(struct particle pt){
 }
 
 void particles_add(struct particle pt){
+	if (N_megno){
+		printf("\nWarning: Trying to add particle after calling megno_init().\n");
+	}
 #ifndef COLLISIONS_NONE
 	if (pt.r>=collisions_max_r){
 		collisions_max2_r = collisions_max_r;

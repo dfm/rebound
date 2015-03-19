@@ -70,38 +70,136 @@ double 	integrator_min_dt 			= 0;	// Minimum timestep used as a floor when adapt
 unsigned long integrator_iterations_max_exceeded= 0;	// Count how many times the iteration did not converge
 const double safety_factor 			= 0.25;	// Maximum increase/deacrease of consecutve timesteps.
 
-
 // Gauss Radau spacings
 const double h[8]	= { 0.0, 0.0562625605369221464656521910, 0.1802406917368923649875799428, 0.3526247171131696373739077702, 0.5471536263305553830014485577, 0.7342101772154105410531523211, 0.8853209468390957680903597629, 0.9775206135612875018911745004}; 
+// Other constants
+const double r[28] = {0.0562625605369221464656522, 0.1802406917368923649875799, 0.1239781311999702185219278, 0.3526247171131696373739078, 0.2963621565762474909082556, 0.1723840253762772723863278, 0.5471536263305553830014486, 0.4908910657936332365357964, 0.3669129345936630180138686, 0.1945289092173857456275408, 0.7342101772154105410531523, 0.6779476166784883945875001, 0.5539694854785181760655724, 0.3815854601022409036792446, 0.1870565508848551580517038, 0.8853209468390957680903598, 0.8290583863021736216247076, 0.7050802551022034031027798, 0.5326962297259261307164520, 0.3381673205085403850889112, 0.1511107696236852270372074, 0.9775206135612875018911745, 0.9212580530243653554255223, 0.7972799218243951369035946, 0.6248958964481178645172667, 0.4303669872307321188897259, 0.2433104363458769608380222, 0.0921996667221917338008147};
+const double c[21] = {-0.0562625605369221464656522, 0.0101408028300636299864818, -0.2365032522738145114532321, -0.0035758977292516175949345, 0.0935376952594620658957485, -0.5891279693869841488271399, 0.0019565654099472210769006, -0.0547553868890686864408084, 0.4158812000823068616886219, -1.1362815957175395318285885, -0.0014365302363708915610919, 0.0421585277212687082291130, -0.3600995965020568162530901, 1.2501507118406910366792415, -1.8704917729329500728817408, 0.0012717903090268677658020, -0.0387603579159067708505249, 0.3609622434528459872559689, -1.4668842084004269779203515, 2.9061362593084293206895457, -2.7558127197720458409721005};
+const double d[21] = {0.0562625605369221464656522, 0.0031654757181708292499905, 0.2365032522738145114532321, 0.0001780977692217433881125, 0.0457929855060279188954539, 0.5891279693869841488271399, 0.0000100202365223291272096, 0.0084318571535257015445000, 0.2535340690545692665214616, 1.1362815957175395318285885, 0.0000005637641639318207610, 0.0015297840025004658189490, 0.0978342365324440053653648, 0.8752546646840910912297246, 1.8704917729329500728817408, 0.0000000317188154017613665, 0.0002762930909826476593130, 0.0360285539837364596003871, 0.5767330002770787313544596, 2.2485887607691598182153473, 2.7558127197720458409721005};
 
-double s[9]; // These constants will be set dynamically.
+// The following values will be set dynamically.
+double s[9];				// Summation coefficients 
 
-double r[28] = {0.0562625605369221464656522, 0.1802406917368923649875799, 0.1239781311999702185219278, 0.3526247171131696373739078, 0.2963621565762474909082556, 0.1723840253762772723863278, 0.5471536263305553830014486, 0.4908910657936332365357964, 0.3669129345936630180138686, 0.1945289092173857456275408, 0.7342101772154105410531523, 0.6779476166784883945875001, 0.5539694854785181760655724, 0.3815854601022409036792446, 0.1870565508848551580517038, 0.8853209468390957680903598, 0.8290583863021736216247076, 0.7050802551022034031027798, 0.5326962297259261307164520, 0.3381673205085403850889112, 0.1511107696236852270372074, 0.9775206135612875018911745, 0.9212580530243653554255223, 0.7972799218243951369035946, 0.6248958964481178645172667, 0.4303669872307321188897259, 0.2433104363458769608380222, 0.0921996667221917338008147};
-double c[21] = {-0.0562625605369221464656522, 0.0101408028300636299864818, -0.2365032522738145114532321, -0.0035758977292516175949345, 0.0935376952594620658957485, -0.5891279693869841488271399, 0.0019565654099472210769006, -0.0547553868890686864408084, 0.4158812000823068616886219, -1.1362815957175395318285885, -0.0014365302363708915610919, 0.0421585277212687082291130, -0.3600995965020568162530901, 1.2501507118406910366792415, -1.8704917729329500728817408, 0.0012717903090268677658020, -0.0387603579159067708505249, 0.3609622434528459872559689, -1.4668842084004269779203515, 2.9061362593084293206895457, -2.7558127197720458409721005};
-double d[21] = {0.0562625605369221464656522, 0.0031654757181708292499905, 0.2365032522738145114532321, 0.0001780977692217433881125, 0.0457929855060279188954539, 0.5891279693869841488271399, 0.0000100202365223291272096, 0.0084318571535257015445000, 0.2535340690545692665214616, 1.1362815957175395318285885, 0.0000005637641639318207610, 0.0015297840025004658189490, 0.0978342365324440053653648, 0.8752546646840910912297246, 1.8704917729329500728817408, 0.0000000317188154017613665, 0.0002762930909826476593130, 0.0360285539837364596003871, 0.5767330002770787313544596, 2.2485887607691598182153473, 2.7558127197720458409721005};
+int N3allocated	= 0; 			// Size of allocated arrays.
 
-
-int N3allocated 		= 0; 	// Size of allocated arrays.
-
-double* at   = NULL;	// Temporary buffer for acceleration
-double* x0  = NULL;	// Temporary buffer for position (used for initial values at h=0) 
-double* v0  = NULL;	//                      velocity
-double* a0  = NULL;	//                      acceleration
-double* csx  = NULL;	//                      compensated summation
-double* csv  = NULL;	//                      compensated summation
+double* at   	= NULL;			// Temporary buffer for acceleration
+double* x0  	= NULL;			// Temporary buffer for position (used for initial values at h=0) 
+double* v0  	= NULL;			//                      velocity
+double* a0  	= NULL;			//                      acceleration
+double* csx  	= NULL;			//                      compensated summation
+double* csv  	= NULL;			//                      compensated summation
 
 double* g[7] = {NULL, NULL, NULL, NULL, NULL, NULL, NULL} ;
 double* b[7] = {NULL, NULL, NULL, NULL, NULL, NULL, NULL} ;
 double* e[7] = {NULL, NULL, NULL, NULL, NULL, NULL, NULL} ;
-double* br[7] = {NULL, NULL, NULL, NULL, NULL, NULL, NULL} ;	// Used for resetting after timestep rejection
-double* er[7] = {NULL, NULL, NULL, NULL, NULL, NULL, NULL} ;
 
+// The following values are used for resetting the b and e coefficients if a timestep gets rejected
+double* br[7] = {NULL, NULL, NULL, NULL, NULL, NULL, NULL} ;
+double* er[7] = {NULL, NULL, NULL, NULL, NULL, NULL, NULL} ;
+double dt_last_success = 0.;			// Last accepted timestep (corresponding to br and er)
+// Helper functions for resetting the b and e coefficients
 void copybuffers(double* _a[7], double* _b[7], int N3);
 void predict_next_step(double ratio, int N3, double* _e[7], double* _b[7]);
-double dt_last_success;
 
+// MEGNO helper routines
+// Weights for integration of a first order differential equation (Note: interval length = 2) 
+const double w[8] = {0.03125, 0.185358154802979278540728972807180754479812609, 0.304130620646785128975743291458180383736715043, 0.376517545389118556572129261157225608762708603, 0.391572167452493593082499533303669362149363727, 0.347014795634501068709955597003528601733139176, 0.249647901329864963257869294715235590174262844, 0.114508814744257199342353731044292225247093225};
+double integrator_megno_Ys;
+double integrator_megno_Yss;
+double integrator_megno_cov_Yt;	// covariance of <Y> and t
+double integrator_megno_var_t;  // variance of t 
+double integrator_megno_mean_t; // mean of t
+double integrator_megno_mean_Y; // mean of Y
+long   integrator_megno_n; 	// number of covariance updates
+void integrator_megno_init(double delta){
+	int _N_megno = N;
+	integrator_megno_Ys = 0.;
+	integrator_megno_Yss = 0.;
+	integrator_megno_cov_Yt = 0.;
+	integrator_megno_var_t = 0.;
+	integrator_megno_n = 0;
+	integrator_megno_mean_Y = 0;
+	integrator_megno_mean_t = 0;
+        for (int i=0;i<_N_megno;i++){ 
+                struct particle megno = {
+			.m  = particles[i].m,
+			.x  = delta*tools_normal(1.),
+			.y  = delta*tools_normal(1.),
+			.z  = delta*tools_normal(1.),
+			.vx = delta*tools_normal(1.),
+			.vy = delta*tools_normal(1.),
+			.vz = delta*tools_normal(1.) };
+                particles_add(megno);
+        }
+	N_megno = _N_megno;
+}
+double integrator_megno(){ // Returns the MEGNO <Y>
+	if (t==0.) return 0.;
+	return integrator_megno_Yss/t;
+}
+double integrator_lyapunov(){ // Returns the largest Lyapunov characteristic number (LCN), or maximal Lyapunov exponent
+	if (t==0.) return 0.;
+	return integrator_megno_cov_Yt/integrator_megno_var_t;
+}
+double integrator_megno_deltad_delta2(){
+        double deltad = 0;
+        double delta2 = 0;
+        for (int i=N-N_megno;i<N;i++){
+                deltad += particles[i].vx * particles[i].x; 
+                deltad += particles[i].vy * particles[i].y; 
+                deltad += particles[i].vz * particles[i].z; 
+                deltad += particles[i].ax * particles[i].vx; 
+                deltad += particles[i].ay * particles[i].vy; 
+                deltad += particles[i].az * particles[i].vz; 
+                delta2 += particles[i].x  * particles[i].x; 
+                delta2 += particles[i].y  * particles[i].y;
+                delta2 += particles[i].z  * particles[i].z;
+                delta2 += particles[i].vx * particles[i].vx; 
+                delta2 += particles[i].vy * particles[i].vy;
+                delta2 += particles[i].vz * particles[i].vz;
+        }
+        return deltad/delta2;
+}
+void integrator_megno_calculate_acceleration(){
+#pragma omp parallel for schedule(guided)
+	for (int i=N-N_megno; i<N; i++){
+	for (int j=N-N_megno; j<N; j++){
+		if (i==j) continue;
+		const double dx = particles[i-N/2].x - particles[j-N/2].x;
+		const double dy = particles[i-N/2].y - particles[j-N/2].y;
+		const double dz = particles[i-N/2].z - particles[j-N/2].z;
+		const double r = sqrt(dx*dx + dy*dy + dz*dz + softening*softening);
+		const double r3inv = 1./(r*r*r);
+		const double r5inv = 3./(r*r*r*r*r);
+		const double ddx = particles[i].x - particles[j].x;
+		const double ddy = particles[i].y - particles[j].y;
+		const double ddz = particles[i].z - particles[j].z;
+		const double Gm = G * particles[j].m;
+		
+		// Variational equations
+		particles[i].ax += Gm * (
+			+ ddx * ( dx*dx*r5inv - r3inv )
+			+ ddy * ( dx*dy*r5inv )
+			+ ddz * ( dx*dz*r5inv )
+			);
+
+		particles[i].ay += Gm * (
+			+ ddx * ( dy*dx*r5inv )
+			+ ddy * ( dy*dy*r5inv - r3inv )
+			+ ddz * ( dy*dz*r5inv )
+			);
+
+		particles[i].az += Gm * (
+			+ ddx * ( dz*dx*r5inv )
+			+ ddy * ( dz*dy*r5inv )
+			+ ddz * ( dz*dz*r5inv - r3inv )
+			);
+	}
+	}
+}
+
+// Do nothing here. This is only used in a leapfrog-like DKD integrator. IAS15 performs one complete timestep.
 void integrator_part1(){
-	// Do nothing here. This is only used in a leapfrog-like DKD integrator.
 }
 
 // This function updates the acceleration on all particles. 
@@ -111,6 +209,9 @@ void integrator_update_acceleration(){
 	PROFILING_STOP(PROFILING_CAT_INTEGRATOR)
 	PROFILING_START()
 	gravity_calculate_acceleration();
+	if (N_megno){
+		integrator_megno_calculate_acceleration();
+	}
 	if (problem_additional_forces) problem_additional_forces();
 	PROFILING_STOP(PROFILING_CAT_GRAVITY)
 	PROFILING_START()
@@ -157,6 +258,9 @@ int integrator_ias15_step() {
 	}
 	
 	// integrator_update_acceleration(); // Not needed. Forces are already calculated in main routine.
+	if (N_megno){
+		integrator_megno_calculate_acceleration();
+	}
 
 	for(int k=0;k<N;k++) {
 		x0[3*k]   = particles[k].x;
@@ -180,13 +284,20 @@ int integrator_ias15_step() {
 		g[6][k] = b[6][k];
 	}
 
+	double integrator_megno_thisdt;
+	double integrator_megno_thisdt_init;
+	if (N_megno){
+		integrator_megno_thisdt_init = w[0]* t * integrator_megno_deltad_delta2();
+	}
+
+	double t_beginning = t;
 	double predictor_corrector_error = 1e300;
 	double predictor_corrector_error_last = 2;
 	int iterations = 0;	
 	// Predictor corrector loop
-	// Stops if 
-	//   1) accuracy better than 1e-16 
-	//   2) accuracy starts to oscillate
+	// Stops if one of the following conditions is satisfied: 
+	//   1) predictor_corrector_error better than 1e-16 
+	//   2) predictor_corrector_error starts to oscillate
 	//   3) more than 12 iterations
 	while(1){
 		if(predictor_corrector_error<1e-16){
@@ -207,6 +318,8 @@ int integrator_ias15_step() {
 		predictor_corrector_error = 0;
 		iterations++;
 
+		integrator_megno_thisdt = integrator_megno_thisdt_init;
+
 		for(int n=1;n<8;n++) {							// Loop over interval using Gauss-Radau spacings
 
 			s[0] = dt * h[n];
@@ -218,6 +331,8 @@ int integrator_ias15_step() {
 			s[6] = 5. * s[5] * h[n] / 7.;
 			s[7] = 3. * s[6] * h[n] / 4.;
 			s[8] = 7. * s[7] * h[n] / 9.;
+			
+			t = t_beginning + s[0];
 
 			// Prepare particles arrays for force calculation
 			for(int i=0;i<N;i++) {						// Predict positions at interval n using b values
@@ -232,8 +347,7 @@ int integrator_ias15_step() {
 				double xk2  = csx[k2] + (s[8]*b[6][k2] + s[7]*b[5][k2] + s[6]*b[4][k2] + s[5]*b[3][k2] + s[4]*b[2][k2] + s[3]*b[1][k2] + s[2]*b[0][k2] + s[1]*a0[k2] + s[0]*v0[k2] );
 				particles[i].z = xk2 + x0[k2];
 			}
-			
-			if (integrator_force_is_velocitydependent){
+			if (N_megno || (problem_additional_forces && integrator_force_is_velocitydependent)){
 				s[0] = dt * h[n];
 				s[1] =      s[0] * h[n] / 2.;
 				s[2] = 2. * s[1] * h[n] / 3.;
@@ -259,6 +373,9 @@ int integrator_ias15_step() {
 
 
 			integrator_update_acceleration();				// Calculate forces at interval n
+			if (N_megno){
+				integrator_megno_thisdt += w[n] * t * integrator_megno_deltad_delta2();
+			}
 
 			for(int k=0;k<N;++k) {
 				at[3*k]   = particles[k].ax;
@@ -275,7 +392,7 @@ int integrator_ias15_step() {
 				case 2: 
 					for(int k=0;k<N3;++k) {
 						double tmp = g[1][k];
-						double gk = at[k] - a0[k];
+						const double gk = at[k] - a0[k];
 						g[1][k] = (gk/r[1] - g[0][k])/r[2];
 						tmp = g[1][k] - tmp;
 						b[0][k] += tmp * c[0];
@@ -284,7 +401,7 @@ int integrator_ias15_step() {
 				case 3: 
 					for(int k=0;k<N3;++k) {
 						double tmp = g[2][k];
-						double gk = at[k] - a0[k];
+						const double gk = at[k] - a0[k];
 						g[2][k] = ((gk/r[3] - g[0][k])/r[4] - g[1][k])/r[5];
 						tmp = g[2][k] - tmp;
 						b[0][k] += tmp * c[1];
@@ -294,7 +411,7 @@ int integrator_ias15_step() {
 				case 4:
 					for(int k=0;k<N3;++k) {
 						double tmp = g[3][k];
-						double gk = at[k] - a0[k];
+						const double gk = at[k] - a0[k];
 						g[3][k] = (((gk/r[6] - g[0][k])/r[7] - g[1][k])/r[8] - g[2][k])/r[9];
 						tmp = g[3][k] - tmp;
 						b[0][k] += tmp * c[3];
@@ -305,7 +422,7 @@ int integrator_ias15_step() {
 				case 5:
 					for(int k=0;k<N3;++k) {
 						double tmp = g[4][k];
-						double gk = at[k] - a0[k];
+						const double gk = at[k] - a0[k];
 						g[4][k] = ((((gk/r[10] - g[0][k])/r[11] - g[1][k])/r[12] - g[2][k])/r[13] - g[3][k])/r[14];
 						tmp = g[4][k] - tmp;
 						b[0][k] += tmp * c[6];
@@ -317,7 +434,7 @@ int integrator_ias15_step() {
 				case 6:
 					for(int k=0;k<N3;++k) {
 						double tmp = g[5][k];
-						double gk = at[k] - a0[k];
+						const double gk = at[k] - a0[k];
 						g[5][k] = (((((gk/r[15] - g[0][k])/r[16] - g[1][k])/r[17] - g[2][k])/r[18] - g[3][k])/r[19] - g[4][k])/r[20];
 						tmp = g[5][k] - tmp;
 						b[0][k] += tmp * c[10];
@@ -333,7 +450,7 @@ int integrator_ias15_step() {
 					double maxb6ktmp = 0.0;
 					for(int k=0;k<N3;++k) {
 						double tmp = g[6][k];
-						double gk = at[k] - a0[k];
+						const double gk = at[k] - a0[k];
 						g[6][k] = ((((((gk/r[21] - g[0][k])/r[22] - g[1][k])/r[23] - g[2][k])/r[24] - g[3][k])/r[25] - g[4][k])/r[26] - g[5][k])/r[27];
 						tmp = g[6][k] - tmp;	
 						b[0][k] += tmp * c[15];
@@ -372,6 +489,8 @@ int integrator_ias15_step() {
 			}
 		}
 	}
+	// Set time back to initial value (will be updated below) 
+	t = t_beginning;
 	// Find new timestep
 	const double dt_done = dt;
 	
@@ -389,11 +508,11 @@ int integrator_ias15_step() {
 			double maxak = 0.0;
 			double maxb6k = 0.0;
 			for(int i=0;i<N;i++){ // Looping over all particles and all 3 components of the acceleration. 
-				double v2 = particles[i].vx*particles[i].vx+particles[i].vy*particles[i].vy+particles[i].vz*particles[i].vz;
-				double x2 = particles[i].x*particles[i].x+particles[i].y*particles[i].y+particles[i].z*particles[i].z;
+				const double v2 = particles[i].vx*particles[i].vx+particles[i].vy*particles[i].vy+particles[i].vz*particles[i].vz;
+				const double x2 = particles[i].x*particles[i].x+particles[i].y*particles[i].y+particles[i].z*particles[i].z;
+				// Skip slowly varying accelerations
 				if (fabs(v2*dt*dt/x2) < 1e-16) continue;
 				for(int k=3*i;k<3*(i+1);k++) { 
-					// Skip slowly varying accelerations
 					const double ak  = fabs(at[k]);
 					if (isnormal(ak) && ak>maxak){
 						maxak = ak;
@@ -424,7 +543,7 @@ int integrator_ias15_step() {
 		 	dt_new = dt_done/safety_factor; // by default, increase timestep a little
 		}
 		
-		if (dt_new<integrator_min_dt) dt_new = integrator_min_dt;
+		if (fabs(dt_new)<integrator_min_dt) dt_new = copysign(integrator_min_dt,dt_new);
 		
 		if (fabs(dt_new/dt_done) < safety_factor) {	// New timestep is significantly smaller.
 			// Reset particles
@@ -438,8 +557,10 @@ int integrator_ias15_step() {
 				particles[k].vz = v0[3*k+2];
 			}
 			dt = dt_new;
-			double ratio = dt/dt_last_success;
-			predict_next_step(ratio, N3, er, br);
+			if (dt_last_success!=0.){		// Do not predict next e/b values if this is the first time step.
+				double ratio = dt/dt_last_success;
+				predict_next_step(ratio, N3, er, br);
+			}
 			
 			return 0; // Step rejected. Do again. 
 		}		
@@ -469,8 +590,28 @@ int integrator_ias15_step() {
 	}
 
 	t += dt_done;
-	// Swap particle buffers
 
+	if (N_megno){
+		// Calculate running Y(t)
+		integrator_megno_Ys += dt_done*integrator_megno_thisdt;
+		double Y = integrator_megno_Ys/t;
+		// Calculate averge <Y> 
+		integrator_megno_Yss += Y * dt_done;
+		// Update covariance of (Y,t) and variance of t
+		integrator_megno_n++;
+		double _d_t = t - integrator_megno_mean_t;
+		integrator_megno_mean_t += _d_t/(double)integrator_megno_n;
+		double _d_Y = integrator_megno() - integrator_megno_mean_Y;
+		integrator_megno_mean_Y += _d_Y/(double)integrator_megno_n;
+		integrator_megno_cov_Yt += ((double)integrator_megno_n-1.)/(double)integrator_megno_n 
+						*(t-integrator_megno_mean_t)
+						*(integrator_megno()-integrator_megno_mean_Y);
+		integrator_megno_var_t  += ((double)integrator_megno_n-1.)/(double)integrator_megno_n 
+						*(t-integrator_megno_mean_t)
+						*(t-integrator_megno_mean_t);
+	}
+
+	// Swap particle buffers
 	for(int k=0;k<N;++k) {
 		particles[k].x = x0[3*k+0];	// Set final position
 		particles[k].y = x0[3*k+1];
@@ -540,6 +681,10 @@ void copybuffers(double* _a[7], double* _b[7], int N3){
 		_b[5][i] = _a[5][i];
 		_b[6][i] = _a[6][i];
 	}
+// The above code seems faster than the code below, probably due to some compiler optimizations. 
+//	for (int i=0;i<7;i++){	
+//		memcpy(_b[i],_a[i], sizeof(double)*N3);
+//	}
 }
 
 #ifdef GENERATE_CONSTANTS

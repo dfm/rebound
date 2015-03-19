@@ -65,13 +65,10 @@ void problem_init(int argc, char* argv[]){
 	}
 }
 
-void problem_inloop(){
+void problem_output(){
 	if(output_check(100.*dt)){
 		output_timing();
 	}
-}
-
-void problem_output(){
 }
 
 void problem_finish(){
