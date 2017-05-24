@@ -24,103 +24,54 @@
  */
 #ifndef TOOLS_H
 #define TOOLS_H
-#include "particle.h"
-/**
- * Struct representing a Keplerian orbit.
- */
-struct orbit {
-	double a;
-	double r;	// Radial distance from central object
-	double h;	// Angular momentum
-	double P;	// Orbital period
-	double l;
-	double e;
-	double inc;
-	double Omega; 	// longitude of ascending node
-	double omega; 	// argument of perihelion
-	double f; 	// true anomaly
-};
 
+#include <stdint.h>
+
+struct reb_simulation;
+struct reb_particles;
 
 /**
- * Calculates a random variable in a given range.
- * @param min Minimum value.
- * @param max Maximum value.
+ * @brief Returns deltad/delta 
+ * @details Note, there is a typo in Gozdziewski et al 2001.
+ * @param r REBOUND simulation to be considered.
  */
-double tools_uniform(double min, double max);
+double reb_tools_megno_deltad_delta(struct reb_simulation* const r);
 
 /**
- * Calculates a random variable drawn form a powerlaw distribution.
- * @param min Minimum value.
- * @param max Maximum value.
- * @param slop Slope of powerlaw distribution.
+ * @brief Update MEGNO after a successful timestep by adding dY (=ddelta/delta*dt)
+ * @param r REBOUND simulation to be considered.
+ * @param dY Increment for MEGNO Y
  */
-double tools_powerlaw(double min, double max, double slope);
+void reb_tools_megno_update(struct reb_simulation* r, double dY);
 
 /**
- * Calculate a random number with normal distribution.
- * Algorithm by D.E. Knut, 1997, The Art of Computer Programmin, Addison-Wesley. 
- * @param variance Variance of normal distribution.
- * @return Random number with normal distribution (mean 0). 
+ * @brief Init random number generator based on time and process id.
  */
-double tools_normal(double variance);
+void reb_tools_init_srand(void);
 
 /**
- * Calculates a random variable drawn form a Rayleigh distribution.  Calculated as described on Rayleigh distribution wikipedia page
- * @param sigma Scale parameter.
+ * @brief Convert angles for orbit routines
  */
-double tools_rayleigh(double sigma);
+double reb_toosl_M_to_E(double e, double M);
 
 /**
- * This function sets up a Plummer sphere.
- * @param _N Number of particles in the plummer sphere.
- * @param M Total mass of the cluster.
- * @param R Characteristic radius of the cluster.
+ * @brief Convert angles for orbit routines
  */
-
-void tools_init_plummer(int _N, double M, double R);
+double reb_tools_M_to_f(double e, double M);
 
 /**
- * Initialize a particle on an orbit in the xy plane.
- * @param M Mass of the central object.
- * @param m Mass of the particle.
- * @param a Semi-major axis of the particle.
- * @param e Eccentricity of the particle.
- * @param omega Pericenter of the particle.
- * @param f true anomaly of the particle.
+ * @brief Kepler solver in Pal coordinates
  */
-struct particle tools_init_orbit2d(double M, double m, double a, double e, double omega, double f);
+void reb_tools_solve_kepler_pal(double h, double k, double lambda, double* p, double* q);
 
 /**
- * Initialize a particle on a 3D orbit.  See Fig. 2.13 of Murray & Dermott Solar System Dynamics for diagram.
- * @param M Mass of the central object.
- * @param m Mass of the particle.
- * @param a Semi-major axis of the particle.
- * @param e Eccentricity of the particle.
- * @param i inclination of the particle to the reference plane.
- * @param Omega Longitude of the ascending node of the particle.
- * @param omega argument of pericenter of the particle.
- * @param f true anomaly of the particle.
+ * @brief Convert particle to Pal coordinates
  */
-
-struct particle tools_init_orbit3d(double M, double m, double a, double e, double i, double Omega, double omega, double f);
+void reb_tools_particle_to_pal(double G, struct reb_particle p, struct reb_particle primary, double *a, double* lambda, double* k, double* h, double* ix, double* iy);
 
 /**
- * This function calculated orbital elements for a given particle. 
- * @param p Particle for which the orbit is calculated.
- * @param star Star or central object particle
- * @return Orbital parameters. 
+ * @brief internal function to handle outputs for the Fast Simulation Restarter.
  */
-struct orbit tools_p2orbit(struct particle p, struct particle star);
-
-/**
- * Move to center of momentum and center of mass frame.
- */
-void tools_move_to_center_of_momentum();
-
-/**
- * Returns the center of mass of particle p1 and p2.
- */
-struct particle tools_get_center_of_mass(struct particle p1, struct particle p2);
+void reb_fsr_heartbeat(struct reb_simulation* const r);
 
 #endif 	// TOOLS_H

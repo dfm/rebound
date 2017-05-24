@@ -4,35 +4,45 @@
 # These can be used to measure the Mean Exponential Growth of Nearby Orbits (MEGNO), a chaos indicator.
 # This example script runs 12^2 simulations and plots the MEGNO value. Values close to <Y>=2 correspond 
 # to regular quasi-periodic orbits. Higher values of <Y> correspond to chaotic orbits.
+
+# Import matplotlib
+import matplotlib; matplotlib.use("pdf")
+import matplotlib.pyplot as plt
+from matplotlib.colors import LogNorm
  
 # Import the rebound module
-import sys; sys.path.append('../')
 import rebound
 # Import other modules
 import numpy as np
 import multiprocessing
+import warnings
 
 # Runs one simulation.
 def simulation(par):
     saturn_a, saturn_e = par
-    rebound.reset()
-    rebound.set_min_dt(0.1)
+    sim = rebound.Simulation() 
+    sim.integrator = "whfast"
+    sim.min_dt = 5.
+    sim.dt = 1.
     
     # These parameters are only approximately those of Jupiter and Saturn.
     sun     = rebound.Particle(m=1.)
-    rebound.particle_add(sun)
-    jupiter = rebound.particle_add(primary=sun,m=0.000954, a=5.204, anom=0.600, omega=0.257, e=0.048)
-    saturn  = rebound.particle_add(primary=sun,m=0.000285, a=saturn_a, anom=0.871, omega=1.616, e=saturn_e)
+    sim.add(sun)
+    jupiter = sim.add(primary=sun,m=0.000954, a=5.204, M=0.600, omega=0.257, e=0.048)
+    saturn  = sim.add(primary=sun,m=0.000285, a=saturn_a, M=0.871, omega=1.616, e=saturn_e)
 
-    rebound.move_to_center_of_momentum()
-    rebound.megno_init(1e-16)
-    rebound.integrate(1e4*2.*np.pi)
+    sim.move_to_com()
+    sim.init_megno()
+    # Hide warning messages (WHFast timestep too large)
+    with warnings.catch_warnings(record=True) as w: 
+        warnings.simplefilter("always")
+        sim.integrate(1e3*2.*np.pi)
 
-    return [rebound.get_megno(),1./(rebound.get_lyapunov()*2.*np.pi)] # returns MEGNO and Lypunov timescale in years
+    return [sim.calculate_megno(),1./(sim.calculate_lyapunov()*2.*np.pi)] # returns MEGNO and Lypunov timescale in years
 
 
 ### Setup grid and run many simulations in parallel
-N = 12                      # Grid size, increase this number to see more detail
+N = 100                      # Grid size, increase this number to see more detail
 a = np.linspace(7.,10.,N)   # range of saturn semi-major axis in AU
 e = np.linspace(0.,0.5,N)   # range of saturn eccentricity
 parameters = []
@@ -40,18 +50,15 @@ for _e in e:
     for _a in a:
         parameters.append([_a,_e])
 
-
+simulation((8,0.))
 # Run simulations in parallel
-pool = multiprocessing.Pool()    # Number of threads default to the number of CPUs on the system
+pool = rebound.InterruptiblePool()    # Number of threads default to the number of CPUs on the system
 print("Running %d simulations on %d threads..." % (len(parameters), pool._processes))
 res = np.nan_to_num(np.array(pool.map(simulation,parameters))) 
 megno = np.clip(res[:,0].reshape((N,N)),1.8,4.)             # clip arrays to plot saturated 
 lyaptimescale = np.clip(np.absolute(res[:,1].reshape((N,N))),1e1,1e5)
 
 ### Create plot and save as pdf 
-import matplotlib; matplotlib.use("pdf")
-import matplotlib.pyplot as plt
-from matplotlib.colors import LogNorm
 
 # Setup plots
 f, axarr = plt.subplots(2,figsize=(10,10))
@@ -78,5 +85,7 @@ cb2.set_label("Lyapunov timescale [years]")
 plt.savefig("megno.pdf")
 
 ### Automatically open plot (OSX only)
-import os
-os.system("open megno.pdf")
+from sys import platform as _platform
+if _platform == "darwin":
+    import os
+    os.system("open megno.pdf")

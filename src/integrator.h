@@ -22,60 +22,41 @@
  * along with rebound.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-#ifndef _INTEGRATOR_EULER_H
-#define _INTEGRATOR_EULER_H
-/*
- * The first half of the integrator step.
- * This function is called at the beginning of the timestep. It 
+#ifndef _INTEGRATOR_H
+#define _INTEGRATOR_H
+struct reb_simulation;
+
+/**
+ * @brief The first half of the integrator step.
+ * @details This function is called at the beginning of the timestep. It 
  * advances the positions by 1/2 timestep.
  */
-void integrator_part1();
-/*
- * The second half of the integrator step.
- * This function is called after gravitational (and non-gravitational) 
+void reb_integrator_part1(struct reb_simulation* r);
+
+/**
+ * @brief The second half of the integrator step.
+ * @details This function is called after gravitational (and non-gravitational) 
  * forces for each particle have been calculated. It advances the 
  * velocity by 1 timestep and the positions by 1/2 timestep.
  * At the end of this function, the positions and velocities are in
  * sync which is needed for collision detection.
  */
-void integrator_part2();
- 
+void reb_integrator_part2(struct reb_simulation* r);
 
-/* 
- * Flag determining if the integrator needs to consider velocity 
- * dependent forces. This is only relevant for IAS15.
- * Default is 1.
- **/ 
-extern int integrator_force_is_velocitydependent;
 
-/*
- * This parameter controls the accuracy of an adaptive integrator.
- * Default is 0 (non-adaptive).
- **/
-extern double integrator_epsilon;
+/** 
+ * @brief This function updates the acceleration on all particles. 
+ * @details It uses the current position and velocity data in the 
+ * (struct reb_particle*) particles structure.
+ */
+void reb_update_acceleration(struct reb_simulation* r);
 
-/*
- * The minimum timestep to be used in an adaptive integrator.
- * Default is 0 (no minimal timestep).
- **/
-extern double integrator_min_dt;
-
-#ifdef INTEGRATOR_IAS15 // MEGNO Routines are currently only implemented for IAS15
-/* 
- * Init the MEGNO particles
- **/
-void integrator_megno_init(double delta);
-
-/*
- * Returns the current value of <Y>
- **/
-double integrator_megno();
-
-/*
- * Returns the largest Lyapunov characteristic number (LCN), or maximal Lyapunov exponent
- **/
-double integrator_lyapunov();
-
-#endif // INTEGRATOR_IAS15
-
+/** 
+ * @brief This function is used to initialize constants in some integrators. 
+ * @details The function doesn't need to be called. Integrators will call it
+ * from within the normal reb_integrator_part1() function. It is sometimes
+ * called before an integration step is performed to ensure variables are 
+ * set before a binary file is outputted.
+ */
+void reb_integrator_init(struct reb_simulation* r);
 #endif

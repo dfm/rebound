@@ -1,101 +1,32 @@
-OPT+= -std=c99 -Wpointer-arith
-ifndef OS
-	OS=$(shell uname)
-endif
-ifeq ($(OS), Linux)
-	OPT+= -Wall  -g 
-	LIB+= -lm
-endif
-ifeq ($(OS), Darwin)
-	OPT+= -I/usr/local/include  -Wall -Wno-deprecated -g
-	PREDEF+= -D_APPLE
-	LIB+= -L/usr/local/lib
-endif
+include Makefile.defs
 
-ifeq ($(MPI), 1)
-	CC?=mpicc
-	PREDEF+= -DMPI
-	OPENGL=0
-else
-	CC?=gcc
-endif
+OPT+= -fPIC -DLIBREBOUND
 
-ifeq ($(FFTW), 1)
-	PREDEF+= -DFFTW
-	LIB+= -lfftw3
-endif
+SOURCES=rebound.c tree.c particle.c gravity.c integrator.c integrator_whfast.c integrator_whfasthelio.c integrator_ias15.c integrator_sei.c integrator_leapfrog.c integrator_hermes.c boundary.c input.c output.c collision.c communication_mpi.c display.c tools.c derivatives.c simulationarchive.c glad.c integrator_janus.c transformations.c
+OBJECTS=$(SOURCES:.c=.o)
+HEADERS=$(SOURCES:.c=.h)
 
-ifeq ($(OPENGL), 1)
-PREDEF+= -DOPENGL
-ifeq ($(OS), Darwin)
-	LIB+= -framework OpenGL -framework GLUT
-else
-	LIB+= -lGL -lGLU -lglut 
-endif
+all: $(SOURCES) librebound.so 
 
-ifeq ($(LIBPNG), 1)
-	PREDEF+= -DLIBPNG
-	LIB+= -lpng
-endif
-endif
+%.o: %.c $(HEADERS)
+	@echo "Compiling source file $< ..."
+	$(CC) -c $(OPT) $(PREDEF) -o $@ $<
 
-ifeq ($(QUADRUPOLE), 1)
-	PREDEF+= -DQUADRUPOLE
-endif
-
-ifeq ($(PROFILING), 1)
-	PREDEF+= -DPROFILING
-endif
-
-ifeq ($(OPENMP), 1)
-	PREDEF+= -DOPENMP
-ifeq ($(CC), icc)
-	OPT+= -openmp
-	LIB+= -openmp
-else
-	OPT+= -fopenmp
-	LIB+= -fopenmp
-endif
-else
-	OPT+= -Wno-unknown-pragmas
-endif
-
-
-# Create precompiler definitions from links
-PREDEF+= -D$(shell basename `readlink gravity.c` '.c' | tr '[a-z]' '[A-Z]')
-PREDEF+= -D$(shell basename `readlink integrator.c` '.c' | tr '[a-z]' '[A-Z]')
-PREDEF+= -D$(shell basename `readlink boundaries.c` '.c' | tr '[a-z]' '[A-Z]')
-PREDEF+= -D$(shell basename `readlink collisions.c` '.c' | tr '[a-z]' '[A-Z]')
-
-PREDEFLIST= $(shell echo "$(PREDEF)" | sed 's/-D//g')
-
-all:
-	# Remove old object files
-	rm -f *.o
-	# Compile all source files 
-	$(CC) $(OPT) $(PREDEF) main.c -c
-	$(CC) $(OPT) $(PREDEF) problem.c -c
-	$(CC) $(OPT) $(PREDEF) tree.c -c
-	$(CC) $(OPT) $(PREDEF) particle.c -c
-	$(CC) $(OPT) $(PREDEF) gravity.c -c
-	$(CC) $(OPT) $(PREDEF) integrator.c -c
-	$(CC) $(OPT) $(PREDEF) boundaries.c -c
-	$(CC) $(OPT) $(PREDEF) input.c -c
-	$(CC) $(OPT) $(PREDEF) output.c -c
-	$(CC) $(OPT) $(PREDEF) collisions.c -c
-	$(CC) $(OPT) $(PREDEF) collision_resolve.c -c
-	$(CC) $(OPT) $(PREDEF) communication_mpi.c -c
-	$(CC) $(OPT) $(PREDEF) zpr.c -c
-	$(CC) $(OPT) $(PREDEF) display.c -c
-	$(CC) $(OPT) $(PREDEF) tools.c -c
-	$(CC) *.o -o nbody $(LIB)
-
+librebound.so: $(OBJECTS)
+	@echo ""        
+	@echo "Linking share library $@ ..."
+	$(CC) $(OPT) -shared $(OBJECTS) $(LIB) -o $@ 
+	
+	@echo ""        
+	@echo "The shared library $< has been created successfully."
+	
+	
 clean:
-	rm -vf *.o
-	rm -vf nbody
-
-doc:
-	sed 's!PREDEFINED             =.*!PREDEFINED             = $(PREDEFLIST)!' ../doc/Doxyfile.input > ../doc/Doxyfile 
-	cd ../doc/ && doxygen
-
-
+	@echo "Removing object files *.o ..."
+	@-rm -f *.o
+	@echo "Removing shared library librebound.so ..."
+	@-rm -f *.so
+	@echo "Removing coverage files ..."
+	@-rm -f *.gcda
+	@-rm -f *.gcno
+	
